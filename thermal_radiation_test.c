@@ -47,18 +47,29 @@ int main()
     double p0 = 1000.0; //hPa
     int nlev = 11;
     int nlyr = nlev - 1;
+    int nwvl = 1;
 
-    double p[nlev],plyr[nlyr],z[nlev],B_layer[nlyr],B_surface,T[nlyr],tau[nlyr],Eup[nlyr],Edown[nlev];
-
+    double p[nlev],plyr[nlyr],z[nlev],B_layer[nwvl][nlyr],B_surface[nwvl],T[nlyr],tau[nwvl][nlyr],Eup[nlev],Edown[nlev];
+ 
+    //wavelength band
+    double wvlband[3][2] = {{0.,8e-6},{8e-6,12e-6},{12e-6,130e-6}};
     //pressure profile
     for (int i = 0; i < nlev; i++) {
         p[i] = p0 * (double) i / (double) nlyr;
     }
     //tau profile
-    double tau_total = 10.;
+    int window = 0;
+    double tau_total = 1.;
     double dtau = tau_total/nlyr;
-    for (int i = 0; i< nlyr; i++){
-        tau[i] = dtau;
+    for (int iwvl=0; iwvl<nwvl; iwvl++){
+        for (int inlyr = 0; inlyr< nlyr; inlyr++){
+            tau[iwvl][inlyr] = dtau;
+        }
+    }
+    if(window){
+        for (int inlyr=0; inlyr<nlyr; inlyr++){
+	    tau[1][inlyr] = 0.;
+	}
     }
     //test temperature profile
     double Tnlev[11] = {127.28,187.09,212.42,229.22,242.03,252.48,261.37,269.13,276.04,282.29,288.00};
@@ -66,10 +77,23 @@ int main()
         T[i] = (Tnlev[i]+Tnlev[i+1])/2.0;
         plyr[i]=(p[i] + p[i+1]) / 2.0;
     }
-    //Planck layer profile
-    B_surface = B_int(0.,120e-6,Tnlev[nlev-1]);
-    for (int i = 0; i< nlyr; i++){
-        B_layer[i] = B_int(0.,135e-6,T[i]);
+    //Planck layer profile for each wavelength band
+    // nwvl=1 means gray atmosphere
+    if(nwvl == 1){
+        B_surface[0] = B_gray(Tnlev[nlev-1]);
+        for(int inlyr=0; inlyr<nlyr; inlyr++){
+	    B_layer[0][inlyr] = B_gray(T[inlyr]);
+	}
+    }
+    else{
+        for (int iwvl=0; iwvl<nwvl; iwvl++){
+            B_surface[iwvl] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],Tnlev[nlev-1]);
+        }
+        for (int inlyr = 0; inlyr< nlyr; inlyr++){
+	    for (int iwvl=0; iwvl<nwvl; iwvl++){
+                B_layer[iwvl][inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
+	    }
+        }
     }
     //p to z
     z[nlev-1] = 0.;
@@ -82,7 +106,23 @@ int main()
         printf("%6.3f %6.1f %6.2f\n",z[i]*1e-3,p[i],Tnlev[i]);
     }
     //test
-    schwarzschild(nlev,tau,B_layer,B_surface,Edown,Eup);
+    double tmpEup[nlev], tmpEdown[nlev], tmpB_surface, tmpB_layer[nlyr], tmp_tau[nlyr];
+    for(int inlev=0; inlev<nlev; inlev++){
+	Eup[inlev] = 0.;
+	Edown[inlev] = 0.;
+    }
+    for(int iwvl=0; iwvl<nwvl; iwvl++){
+	for(int inlyr=0; inlyr<nlyr; inlyr++){
+	    tmpB_layer[inlyr] = B_layer[iwvl][inlyr];
+	    tmp_tau[inlyr] = tau[iwvl][inlyr];
+	}
+	tmpB_surface = B_surface[iwvl];
+    	schwarzschild(nlev,tmp_tau,tmpB_layer,tmpB_surface,tmpEdown,tmpEup);
+	for(int inlev=0; inlev<nlev; inlev++){
+	    Eup[inlev] += tmpEup[inlev];
+	    Edown[inlev] += tmpEdown[inlev];
+	}
+    }
     printf("tau_total = %2f :\n", tau_total);
     printf("z[km], P[hPa], E_dn[W/m2], E_up[W/m2]:\n");
     for (int i=0; i < nlev; i++){
