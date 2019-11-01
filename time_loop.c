@@ -56,7 +56,7 @@ int main()
     int years = 1;
     int nwvl = 3;
 
-    double p[nlev],z[nlev],plyr[nlyr],B_layer[nwvl][nlyr],B_surface[nwvl],Tnlev[nlev],T[nlyr],theta[nlyr],tau[nwvl][nlyr],Eup[nlev],Edown[nlev],deltaE[nlyr];
+    double p[nlev],z[nlev],plyr[nlyr],B_layer[nlyr],B_surface,Tnlev[nlev],T[nlyr],theta[nlyr],Eup[nlev],Edown[nlev],deltaE[nlyr],tau[nlyr],tau0[nlyr];
     
     //wavelength band
     double wvlband[3][2] = {{0.,8e-6},{8e-6,12e-6},{12e-6,130e-6}};
@@ -65,18 +65,16 @@ int main()
         p[i] = p0 * (double) i / (double) nlyr;
     }
     //tau profile
-    int window = 0;
-    double tau_total = 1;
-    double dtau = tau_total/nlyr;
-    for (int iwvl=0; iwvl<nwvl; iwvl++){
-        for (int inlyr = 0; inlyr< nlyr; inlyr++){
-            tau[iwvl][inlyr] = dtau;
+    int window = 1;
+    if(window){
+	for(int inlyr=0; inlyr<nlyr; inlyr++){
+	    tau0[inlyr] = 0.;
         }
     }
-    if(window){
-        for (int inlyr=0; inlyr<nlyr; inlyr++){
-	    tau[1][inlyr] = 0;
-	}
+    double tau_total = 1.;
+    double dtau = tau_total/nlyr;
+    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+        tau[inlyr] = dtau;
     }
     //random level temperature profile
     for (int i=0; i < nlev; i++) {
@@ -96,47 +94,46 @@ int main()
     //time loop
     while(t<years*365*24*3600){
         t+=dt;
-        //Planck layer profile for each wavelength band
-        // nwvl=1 means gray atmosphere
-        if(nwvl == 1){
-            B_surface[0] = B_gray(Tnlev[nlev-1]);
-            for(int inlyr=0; inlyr<nlyr; inlyr++){
-	        B_layer[0][inlyr] = B_gray(T[inlyr]);
-	    }
-        }
-        else{
-            for (int iwvl=0; iwvl<nwvl; iwvl++){
-                B_surface[iwvl] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],Tnlev[nlev-1]);
-            }
-            for (int inlyr = 0; inlyr< nlyr; inlyr++){
-	        for (int iwvl=0; iwvl<nwvl; iwvl++){
-                    B_layer[iwvl][inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
-	        }
-            }
-        }
 	//heating
         T[nlyr-1] += E2T(Eearth,plyr[nlyr-1],dt); //heating
         for(int i = 0; i<nlyr ; i++){
             theta[i] = T2theta(T[i], plyr[i]);
 	}
-	//radiation transport for each wavelength band
-	double tmpEup[nlev], tmpEdown[nlev], tmpB_surface, tmpB_layer[nlyr], tmp_tau[nlyr];
-	for(int inlev=0; inlev<nlev; inlev++){
-	    Eup[inlev] = 0.;
-	    Edown[inlev] = 0.;
-	}
-	for(int iwvl=0; iwvl<nwvl; iwvl++){
-	    for(int inlyr=0; inlyr<nlyr; inlyr++){
-		tmpB_layer[inlyr] = B_layer[iwvl][inlyr];
-	  	tmp_tau[inlyr] = tau[iwvl][inlyr];
+
+        // nwvl=1 means gray atmosphere
+        if(nwvl == 1){
+	    //Planck profile
+            B_surface = B_gray(Tnlev[nlev-1]);
+            for(int inlyr=0; inlyr<nlyr; inlyr++){
+	        B_layer[inlyr] = B_gray(T[inlyr]);
 	    }
-	    tmpB_surface = B_surface[iwvl];
-    	    schwarzschild(nlev,tmp_tau,tmpB_layer,tmpB_surface,tmpEdown,tmpEup);
-	    for(int inlev=0; inlev<nlev; inlev++){
-	        Eup[inlev] += tmpEup[inlev];
-	        Edown[inlev] += tmpEdown[inlev];
+	    schwarzschild(nlev,tau,B_layer,B_surface,Edown,Eup);
+        }
+
+        //nwvl>1 means radiation transport for each wavelength band separately
+        else{
+	    double tmp_Eup[nlev], tmp_Edown[nlev];
+	    for (int inlev=0; inlev<nlev; inlev++){
+		Eup[inlev] = 0.;
+		Edown[inlev] = 0.;
 	    }
-	}
+	    for (int iwvl=0; iwvl<nwvl; iwvl++){
+                B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],Tnlev[nlev-1]);
+                for (int inlyr = 0; inlyr< nlyr; inlyr++){
+                    B_layer[inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
+                }
+		if(window && iwvl==1){ 
+		    schwarzschild(nlev,tau0,B_layer,B_surface,tmp_Edown,tmp_Eup);
+		}
+		else{
+    	            schwarzschild(nlev,tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+		}
+	        for(int inlev=0; inlev<nlev; inlev++){
+	            Eup[inlev] += tmp_Eup[inlev];
+	            Edown[inlev] += tmp_Edown[inlev];
+	        }
+	    }
+        }
     	dE(deltaE,Edown,Eup,nlyr);
     	//deltaT
     	for (int i = 0; i < nlyr; i++){
@@ -151,7 +148,7 @@ int main()
     }
     printf("z[km], T, theta after %2d years:\n", years);
     for (int i=0; i < nlyr; i++){
-        printf("%6.3f %6.1f %6.1f\n",z[i]*1e-3,T[i],theta[i]);
+        printf("%6.3f %6.6f %6.6f\n",z[i]*1e-3,T[i],theta[i]);
     }
 }
 
