@@ -86,11 +86,6 @@ int main()
         plyr[i]=(p[i] + p[i+1]) / 2.0;
         theta[i] = T2theta(T[i], plyr[i]);
     }
-    //p to z
-    z[nlev-1] = 0.;
-    for(int i=nlev-2; i>=0; i--){
-	z[i] = z[i+1] + dp2dz(100,plyr[i],T[i]);
-    }
     //time loop
     while(t<years*365*24*3600){
         t+=dt;
@@ -145,6 +140,11 @@ int main()
         for (int i=0; i < nlyr; i++){
         T[i] = theta2T(theta[i],plyr[i]);
         }
+    }
+    //p to z
+    z[nlev-1] = 0.;
+    for(int i=nlev-2; i>=0; i--){
+	z[i] = z[i+1] + dp2dz(100,plyr[i],T[i]);
     }
     printf("z[km], T, theta after %2d years:\n", years);
     for (int i=0; i < nlyr; i++){
