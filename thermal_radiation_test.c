@@ -64,7 +64,7 @@ int main()
 	    tau0[inlyr] = 0.;
         }
     }
-    double tau_total = 1.;
+    double tau_total = 10.;
     double dtau = tau_total/nlyr;
     for (int inlyr = 0; inlyr< nlyr; inlyr++){
         tau[inlyr] = dtau;
