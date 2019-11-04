@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "thermal_radiation.h"
-#include "planck.h"
 
 #define RA 287.0
 #define CP 1004.0
@@ -56,10 +55,10 @@ int main()
     int years = 1;
     int nwvl = 3;
 
-    double p[nlev],z[nlev],plyr[nlyr],B_layer[nlyr],B_surface,Tnlev[nlev],T[nlyr],theta[nlyr],Eup[nlev],Edown[nlev],deltaE[nlyr],tau[nlyr],tau0[nlyr];
+    double p[nlev],z[nlev],plyr[nlyr],B_layer[nlyr],B_surface,Tsurf,Tnlev[nlev],T[nlyr],theta[nlyr],Eup[nlev],Edown[nlev],deltaE[nlyr],tau[nlyr],tau0[nlyr];
     
     //wavelength band
-    double wvlband[3][2] = {{0.,8e-6},{8e-6,12e-6},{12e-6,130e-6}};
+    double wvlband[3][2] = {{1e-6,8e-6},{8e-6,12e-6},{12e-6,1e-4}};
     //pressure profile
     for (int i = 0; i < nlev; i++) {
         p[i] = p0 * (double) i / (double) nlyr;
@@ -71,7 +70,7 @@ int main()
 	    tau0[inlyr] = 0.;
         }
     }
-    double tau_total = 1.;
+    double tau_total = 0.;
     double dtau = tau_total/nlyr;
     for (int inlyr = 0; inlyr< nlyr; inlyr++){
         tau[inlyr] = dtau;
@@ -89,6 +88,8 @@ int main()
     //time loop
     while(t<years*365*24*3600){
         t+=dt;
+        double dz = dp2dz(100,plyr[nlyr-2],T[nlyr-2])-dp2dz(100,plyr[nlyr-1],T[nlyr-1]);
+	Tsurf = T[nlyr-1]-dz/2.*1e-2;
 	//heating
         T[nlyr-1] += E2T(Eearth,plyr[nlyr-1],dt); //heating
         for(int i = 0; i<nlyr ; i++){
@@ -98,7 +99,7 @@ int main()
         // nwvl=1 means gray atmosphere
         if(nwvl == 1){
 	    //Planck profile
-            B_surface = B_gray(Tnlev[nlev-1]);
+            B_surface = B_gray(Tsurf);
             for(int inlyr=0; inlyr<nlyr; inlyr++){
 	        B_layer[inlyr] = B_gray(T[inlyr]);
 	    }
@@ -113,7 +114,7 @@ int main()
 		Edown[inlev] = 0.;
 	    }
 	    for (int iwvl=0; iwvl<nwvl; iwvl++){
-                B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],Tnlev[nlev-1]);
+                B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],Tsurf);
                 for (int inlyr = 0; inlyr< nlyr; inlyr++){
                     B_layer[inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
                 }

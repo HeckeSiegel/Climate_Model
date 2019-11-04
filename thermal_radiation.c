@@ -2,19 +2,41 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define pi 3.14
+#define pi 3.141592
+#define h 6.62607015e-34 //Js
+#define c 2.99792458e8 // m/s
+#define kB 1.38064852e-23 // m^2kgs^-2K^-1
+#define sigma 5.67e-8
+
+double B_gray(double T){
+    return sigma*pow(T,4)/pi;
+}
+double B(double wvl, double T){
+    return 2*h*pow(c,2)/pow(wvl,5) * 1./(exp(h*c/(wvl*kB*T))-1.);
+}
+double B_int(double lambda_1, double lambda_2, double T){
+    double dwvl = 1e-7;
+    int N = (lambda_2-lambda_1)/dwvl;
+    double wvl = lambda_1+dwvl/2.;
+    double res = 0.;
+    //integration
+    for(int i=0; i<N; i++){
+        res += B(wvl+dwvl*i,T)*dwvl;
+    }
+    return res;
+}
 
 double alpha(double mu, double tau){
     return 1. - exp(-tau/mu);
 }
 void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, double *Edown, double *Eup){
-    int Nmu = 10;
+    int Nmu = 20;
     double dmu = 1./Nmu;
     double mu[Nmu],Ldown0[Nmu], Ldown1[Nmu];
     //Edown
     for (int iNmu = 0; iNmu < Nmu; iNmu++){
         Ldown0[iNmu] = 0.;
-	mu[iNmu] = 0.05 + iNmu*dmu;
+	mu[iNmu] = dmu/2. + iNmu*dmu;
     }
     Edown[0] = 0.;
     for (int inlev = 1; inlev < nlev; inlev++){

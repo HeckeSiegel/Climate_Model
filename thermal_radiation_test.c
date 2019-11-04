@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "thermal_radiation.h"
-#include "planck.h"
 
 #define RA 287.0
 #define CP 1004.0
@@ -47,12 +46,12 @@ int main()
     double p0 = 1000.0; //hPa
     int nlev = 11;
     int nlyr = nlev - 1;
-    int nwvl = 1;
+    int nwvl = 3;
 
-    double p[nlev],plyr[nlyr],z[nlev],B_layer[nlyr],B_surface,T[nlyr],tau[nlyr],tau0[nlyr],Eup[nlev],Edown[nlev];
+    double p[nlev],plyr[nlyr],z[nlev],B_layer[nlyr],B_surface,T[nlyr],tau[nlyr],tau0[nlyr],Eup[nlev],Edown[nlev],tmp_Eup[nlev], tmp_Edown[nlev];
  
     //wavelength band
-    double wvlband[3][2] = {{0.,8e-6},{8e-6,12e-6},{12e-6,130e-6}};
+    double wvlband[3][2] = {{1e-6,8e-6},{8e-6,12e-6},{12e-6,1e-2}};
     //pressure profile
     for (int i = 0; i < nlev; i++) {
         p[i] = p0 * (double) i / (double) nlyr;
@@ -88,7 +87,6 @@ int main()
 
     //nwvl>1 means radiation transport for each wavelength band separately
     else{
-	double tmp_Eup[nlev], tmp_Edown[nlev];
         for (int inlev=0; inlev<nlev; inlev++){
 	    Eup[inlev] = 0.;
 	    Edown[inlev] = 0.;
