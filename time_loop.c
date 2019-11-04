@@ -55,7 +55,7 @@ int main()
     int years = 1;
     int nwvl = 3;
 
-    double p[nlev],z[nlev],plyr[nlyr],B_layer[nlyr],B_surface,Tsurf,Tnlev[nlev],T[nlyr],theta[nlyr],Eup[nlev],Edown[nlev],deltaE[nlyr],tau[nlyr],tau0[nlyr];
+    double p[nlev],z[nlev],plyr[nlyr],B_layer[nlyr],B_surface,Tsurf,Tnlev[nlev],T[nlyr],theta[nlyr],Eup[nlev],Edown[nlev],tmp_Eup[nlev],tmp_Edown[nlev],deltaE[nlyr],tau[nlyr],tau0[nlyr];
     
     //wavelength band
     double wvlband[3][2] = {{1e-6,8e-6},{8e-6,12e-6},{12e-6,1e-4}};
@@ -88,8 +88,8 @@ int main()
     //time loop
     while(t<years*365*24*3600){
         t+=dt;
-        double dz = dp2dz(100,plyr[nlyr-2],T[nlyr-2])-dp2dz(100,plyr[nlyr-1],T[nlyr-1]);
-	Tsurf = T[nlyr-1]-dz/2.*1e-2;
+        //double dz = dp2dz(100,plyr[nlyr-2],T[nlyr-2])-dp2dz(100,plyr[nlyr-1],T[nlyr-1]);
+	Tsurf = T[nlyr-1];//T[nlyr-1]-dz/2.*1e-2;
 	//heating
         T[nlyr-1] += E2T(Eearth,plyr[nlyr-1],dt); //heating
         for(int i = 0; i<nlyr ; i++){
@@ -108,7 +108,6 @@ int main()
 
         //nwvl>1 means radiation transport for each wavelength band separately
         else{
-	    double tmp_Eup[nlev], tmp_Edown[nlev];
 	    for (int inlev=0; inlev<nlev; inlev++){
 		Eup[inlev] = 0.;
 		Edown[inlev] = 0.;
