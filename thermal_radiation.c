@@ -25,7 +25,6 @@ double B_int(double lambda_1, double lambda_2, double T){
     }
     return res;
 }
-
 double alpha(double mu, double tau){
     return 1. - exp(-tau/mu);
 }
@@ -65,7 +64,53 @@ void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, dou
     }
 }
 void dE(double *deltaE, double *Edown, double *Eup, int nlyr){
-    for (int i = 0; i<nlyr; i++){
+    for (int i = 0; i<nlyr-1; i++){
 	deltaE[i] = Edown[i] + Eup[i+1] - Eup[i] - Edown[i+1];
 	}
+    deltaE[nlyr-1] = Edown[nlyr] - Eup[nlyr];
+}
+void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup){
+    double tau[nlyr];
+    double B_surface, B_layer[nlyr];
+    double dtau = tau_total/nlyr;
+    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+        tau[inlyr] = dtau;
+    }
+    B_surface = B_gray(T[nlyr-1]);
+    for(int inlyr=0; inlyr<nlyr; inlyr++){
+	B_layer[inlyr] = B_gray(T[inlyr]);
+    }
+    schwarzschild(nlev,tau,B_layer,B_surface,Edown,Eup);
+}
+void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup){
+    double tau[nwvl][nlyr], tmp_tau[nlyr];
+    double B_surface, B_layer[nlyr];
+    double dtau = tau_total/nlyr;
+    double tmp_Edown[nlev], tmp_Eup[nlev];
+
+    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+	for (int inwvl = 0; inwvl<nwvl; inwvl++){
+        tau[inwvl][inlyr] = dtau;
+	}
+    }
+    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+	tau[1][inlyr] = 0.;
+    }
+    double wvlband[3][2] = {{1e-6,8e-6},{8e-6,12e-6},{12e-6,1e-3}};
+    for (int inlev=0; inlev<nlev; inlev++){
+	Eup[inlev] = 0.;
+	Edown[inlev] = 0.;
+    }
+    for (int iwvl=0; iwvl<nwvl; iwvl++){
+        B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[nlyr-1]);
+        for (int inlyr = 0; inlyr< nlyr; inlyr++){
+            B_layer[inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
+	    tmp_tau[inlyr] = tau[iwvl][inlyr];
+        }
+    	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+	for(int inlev=0; inlev<nlev; inlev++){
+	    Eup[inlev] += tmp_Eup[inlev];
+	    Edown[inlev] += tmp_Edown[inlev];
+        }
+    }
 }

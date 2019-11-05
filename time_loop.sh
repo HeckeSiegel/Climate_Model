@@ -1,6 +1,6 @@
 CC=gcc
 
-CFLAGS='-O3 -ffast-math -g -Wall'
+CFLAGS='-O3 -ffast-math -fstrict-aliasing -g -Wall'
 
 DLFLAGS='-lm'
 
