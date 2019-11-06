@@ -49,14 +49,14 @@ int main()
     double p0 = 1000.0; //hPa
     int nlev = 11;
     int nlyr = nlev - 1;
-    int years = 2;
+    int years = 1;
     int nwvl = 3;
     double tau_total = 1.0;
     int dt = 15*60;
 
     double p[nlev],plyr[nlyr],z[nlev];
     double Tnlev[nlev],T[nlyr],theta[nlyr];
-    double Eup[nlev],Edown[nlev],deltaE[nlyr];
+    double Eup[nlev],Edown[nlev],deltaE[nlyr],tmp_deltaE[nlyr];
 
     //pressure profile
     for (int i = 0; i < nlev; i++) {
@@ -77,37 +77,40 @@ int main()
         /* gray atmosphere
         oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup);
         */
-
         //window atmosphere
 	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup);
-	
     	dE(deltaE,Edown,Eup,nlyr);
 
         //time step
-	double gradE = deltaE[nlyr-4] - deltaE[nlyr-5];
-        if(gradE<0){
-	    gradE = -gradE;  
+          //calculate absolute values
+	for(int inlyr=0; inlyr<nlyr; inlyr++){
+	    tmp_deltaE[inlyr] = deltaE[inlyr];
+	    if(tmp_deltaE[inlyr]<0){
+	        tmp_deltaE[inlyr] = -tmp_deltaE[inlyr];  
+	    }
 	}
-	while(gradE*g*dt/(10000.*CP) < 1.0){
-	    dt += 10*60;
+          //find biggest change
+	convection(tmp_deltaE,nlyr);
+	while(tmp_deltaE[0]*g*dt/(10000.*CP) < 2.){
+	    dt += 15*60;
 	    if(dt > 60*60*24){
 	        break;
 	    }
 	}
+	t+=dt;
+	//heating
+        T[nlyr-1] += E2T(Eearth,p[nlev-1]-p[nlev-2],dt);
+	//printf("%2d\n",dt/60);
     	//deltaT
     	for (int i = 0; i < nlyr; i++){
 	    T[i] += E2T(deltaE[i],p[i+1]-p[i],dt);
 	    theta[i] = T2theta(T[i], plyr[i]);
     	}
-	//heating
-        T[nlyr-1] += E2T(Eearth,p[nlev-1]-p[nlev-2],dt);
 	//convection
         convection(theta,nlyr);
         for (int i=0; i < nlyr; i++){
-        T[i] = theta2T(theta[i],plyr[i]);
+            T[i] = theta2T(theta[i],plyr[i]);
         }
-	//printf("%2d\n",dt/60);
-	t+=dt;
     }
     //p to z
     z[nlev-1] = 0.;
@@ -116,7 +119,6 @@ int main()
     }
     printf("tau_total =%6.1f after %2d years\n",tau_total,years);
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
-    printf("Edown[TOA] = %6.3f\n",Edown[0]);
     printf("z[km], T, theta:\n");
     for (int i=0; i < nlyr; i++){
         printf("%6.3f %6.6f %6.6f\n",z[i]*1e-3,T[i],theta[i]);

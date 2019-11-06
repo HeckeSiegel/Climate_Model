@@ -64,10 +64,10 @@ void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, dou
     }
 }
 void dE(double *deltaE, double *Edown, double *Eup, int nlyr){
-    for (int i = 0; i<nlyr-1; i++){
+    for (int i = 0; i<nlyr; i++){
 	deltaE[i] = Edown[i] + Eup[i+1] - Eup[i] - Edown[i+1];
 	}
-    deltaE[nlyr-1] = Edown[nlyr] - Eup[nlyr];
+    deltaE[nlyr-1] += Edown[nlyr] - Eup[nlyr];
 }
 void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup){
     double tau[nlyr];
