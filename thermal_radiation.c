@@ -71,7 +71,7 @@ void dE(double *deltaE, double *Edown, double *Eup, int nlyr){
 	}
     deltaE[nlyr-1] = Edown[nlyr-1] - Eup[nlyr-1] + Eearth;
 }
-void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup){
+void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup, double *deltaE){
     double tau[nlyr];
     double B_surface, B_layer[nlyr];
     double dtau = tau_total/nlyr;
@@ -82,10 +82,10 @@ void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *E
     for(int inlyr=0; inlyr<nlyr; inlyr++){
 	B_layer[inlyr] = B_gray(T[inlyr]);
     }
-    printf("%6.3f %6.3f %6.3f\n",B_surface,B_layer[5],B_layer[0]);
     schwarzschild(nlev,tau,B_layer,B_surface,Edown,Eup);
+    dE(deltaE,Edown,Eup,nlyr);
 }
-void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup){
+void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup, double *deltaE){
     double tau[nwvl][nlyr], tmp_tau[nlyr];
     double B_surface, B_layer[nlyr];
     double dtau = tau_total/nlyr;
@@ -123,5 +123,6 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
 	    Edown[inlev] += tmp_Edown[inlev];
         }
     }
+    dE(deltaE,Edown,Eup,nlyr);
     //printf("%6.3f %6.3f %6.3f\n",tmp_B_surface,tmp_B_layerF,tmp_B_layerN);
 }
