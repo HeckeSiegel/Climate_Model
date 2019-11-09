@@ -7,6 +7,8 @@
 #define c 2.99792458e8 // m/s
 #define kB 1.38064852e-23 // m^2kgs^-2K^-1
 #define sigma 5.67e-8
+#define Eearth 240.4
+#define Evenus 261.
 
 double B_gray(double T){
     return sigma*pow(T,4)/pi;
@@ -64,10 +66,10 @@ void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, dou
     }
 }
 void dE(double *deltaE, double *Edown, double *Eup, int nlyr){
-    for (int i = 0; i<nlyr; i++){
+    for (int i = 0; i<nlyr-1; i++){
 	deltaE[i] = Edown[i] + Eup[i+1] - Eup[i] - Edown[i+1];
 	}
-    deltaE[nlyr-1] += Edown[nlyr] - Eup[nlyr];
+    deltaE[nlyr-1] = Edown[nlyr-1] - Eup[nlyr-1] + Eearth;
 }
 void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup){
     double tau[nlyr];
@@ -80,6 +82,7 @@ void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *E
     for(int inlyr=0; inlyr<nlyr; inlyr++){
 	B_layer[inlyr] = B_gray(T[inlyr]);
     }
+    printf("%6.3f %6.3f %6.3f\n",B_surface,B_layer[5],B_layer[0]);
     schwarzschild(nlev,tau,B_layer,B_surface,Edown,Eup);
 }
 void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup){
@@ -87,6 +90,7 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
     double B_surface, B_layer[nlyr];
     double dtau = tau_total/nlyr;
     double tmp_Edown[nlev], tmp_Eup[nlev];
+    //double tmp_B_surface,tmp_B_layerF,tmp_B_layerN;
 
     for (int inlyr = 0; inlyr< nlyr; inlyr++){
 	for (int inwvl = 0; inwvl<nwvl; inwvl++){
@@ -101,16 +105,23 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
 	Eup[inlev] = 0.;
 	Edown[inlev] = 0.;
     }
+    /*tmp_B_surface = 0.;
+    tmp_B_layerF = 0.;
+    tmp_B_layerN = 0.;*/
     for (int iwvl=0; iwvl<nwvl; iwvl++){
         B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[nlyr-1]);
         for (int inlyr = 0; inlyr< nlyr; inlyr++){
             B_layer[inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
 	    tmp_tau[inlyr] = tau[iwvl][inlyr];
         }
+	/*tmp_B_surface += B_surface;
+	tmp_B_layerF += B_layer[5];
+	tmp_B_layerN += B_layer[0];*/
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
 	for(int inlev=0; inlev<nlev; inlev++){
 	    Eup[inlev] += tmp_Eup[inlev];
 	    Edown[inlev] += tmp_Edown[inlev];
         }
     }
+    //printf("%6.3f %6.3f %6.3f\n",tmp_B_surface,tmp_B_layerF,tmp_B_layerN);
 }

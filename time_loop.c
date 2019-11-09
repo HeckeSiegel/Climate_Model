@@ -4,9 +4,9 @@
 #include "thermal_radiation.h"
 
 #define RA 287.0
-#define CP 1004.0
+#define CP 1005.0
 #define g 9.81
-#define Eearth 240.4 // W/m^2
+#define Eearth 240. // W/m^2
 #define sigma 5.670374e-8
 
 double T2theta(double T, double p){
@@ -45,17 +45,16 @@ void convection(double *theta, int size){
 
 int main()
 {
-    int t = 0;
+    double t = 0.;
     double p0 = 1000.0; //hPa
     int nlev = 11;
     int nlyr = nlev - 1;
-    int years = 1;
     int nwvl = 3;
-    double tau_total = 1.0;
+    double tau_total = 1.;
     int dt = 15*60;
 
     double p[nlev],plyr[nlyr],z[nlev];
-    double Tnlev[nlev],T[nlyr],theta[nlyr];
+    double Tnlev[nlev],T[nlyr],theta[nlyr],tmp_T[nlyr];
     double Eup[nlev],Edown[nlev],deltaE[nlyr],tmp_deltaE[nlyr];
 
     //pressure profile
@@ -73,37 +72,19 @@ int main()
         theta[i] = T2theta(T[i], plyr[i]);
     }
     //time loop
-    while(t<years*365*24*3600){
-        /* gray atmosphere
-        oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup);
-        */
+    while(1==1){
+        // gray atmosphere
+        //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup);
         //window atmosphere
 	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup);
+	//delta E
     	dE(deltaE,Edown,Eup,nlyr);
-
-        //time step
-          //calculate absolute values
-	for(int inlyr=0; inlyr<nlyr; inlyr++){
-	    tmp_deltaE[inlyr] = deltaE[inlyr];
-	    if(tmp_deltaE[inlyr]<0){
-	        tmp_deltaE[inlyr] = -tmp_deltaE[inlyr];  
-	    }
+	for(int inlyr = 0; inlyr<nlyr; inlyr++){
+	    tmp_T[inlyr] = T[inlyr];
 	}
-          //find biggest change
-	convection(tmp_deltaE,nlyr);
-	while(tmp_deltaE[0]*g*dt/(10000.*CP) < 2.){
-	    dt += 15*60;
-	    if(dt > 60*60*24){
-	        break;
-	    }
-	}
-	t+=dt;
-	//heating
-        T[nlyr-1] += E2T(Eearth,p[nlev-1]-p[nlev-2],dt);
-	//printf("%2d\n",dt/60);
     	//deltaT
     	for (int i = 0; i < nlyr; i++){
-	    T[i] += E2T(deltaE[i],p[i+1]-p[i],dt);
+	    T[i] += E2T(deltaE[i],100.,dt);
 	    theta[i] = T2theta(T[i], plyr[i]);
     	}
 	//convection
@@ -111,17 +92,40 @@ int main()
         for (int i=0; i < nlyr; i++){
             T[i] = theta2T(theta[i],plyr[i]);
         }
+	//time step
+          //calculate absolute values
+	for(int inlyr=0; inlyr<nlyr; inlyr++){
+	    tmp_deltaE[inlyr] = tmp_T[inlyr]-T[inlyr];
+	    if(tmp_deltaE[inlyr]<0.){
+	        tmp_deltaE[inlyr] = -tmp_deltaE[inlyr];  
+	    }
+	}
+          //find biggest change
+	convection(tmp_deltaE,nlyr);
+	while(tmp_deltaE[0] < 0.5){
+	    if(dt > 60*60*24){
+	        break;
+	    }
+	    dt += 15*60;
+	}
+	if(tmp_deltaE[0]<0.0001){
+	    break;
+	}
+	else{
+	    t+=dt;
+	}
     }
     //p to z
     z[nlev-1] = 0.;
     for(int i=nlev-2; i>=0; i--){
 	z[i] = z[i+1] + dp2dz(100,plyr[i],T[i]);
     }
-    printf("tau_total =%6.1f after %2d years\n",tau_total,years);
+    printf("tau_total =%6.1f after %6.1f years\n",tau_total,t/(365.*24*60*60));
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
     printf("z[km], T, theta:\n");
     for (int i=0; i < nlyr; i++){
         printf("%6.3f %6.6f %6.6f\n",z[i]*1e-3,T[i],theta[i]);
     }
 }
+
 
