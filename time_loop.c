@@ -55,10 +55,41 @@ void absDeltaT(double *T, double *tmp_T, double *deltaT, int nlyr){
 	}
     }
 }
+double findT(double *deltaE, double *T, double *plyr, int nlyr, double dp){
+    double deltaT[nlyr],tmp_T[nlyr], theta[nlyr];
+    double dt =15*60;
+    for(int inlyr=0; inlyr<nlyr; inlyr++){
+	tmp_T[inlyr] = T[inlyr];
+    }
+    while(1==1){
+	//new T
+        dT(deltaE,T,nlyr,dp,dt);
+	//convection
+    	for (int inlyr = 0; inlyr < nlyr; inlyr++){
+	    theta[inlyr] = T2theta(T[inlyr], plyr[inlyr]);
+    	}
+    	convection(T,nlyr);
+    	for (int inlyr=0; inlyr < nlyr; inlyr++){
+    	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
+    	}
+	//absolute values of temperature difference
+	absDeltaT(T, tmp_T, deltaT, nlyr);
+	//find biggest temperature change
+	convection(deltaT,nlyr);
+	if(deltaT[0]>0.5){ // we want temperature change of at least 1K
+	    break;
+	}
+	else{
+	    dt += 15*60;
+	}
+	if(dt>60*60*24){break;} //break so that the time steps doesn't become too big
+    }
+    return dt;
+}
 int main()
 {
     double t = 0.;
-    int years = 2;
+    int years = 1;
     double p0 = 1000.0; //hPa
     int nlev = 11;
     int nlyr = nlev - 1;
@@ -67,7 +98,7 @@ int main()
 
 
     double p[nlev],plyr[nlyr],z[nlev];
-    double Tnlev[nlev],T[nlyr],theta[nlyr],tmp_T[nlyr],deltaT[nlyr],dt;
+    double Tnlev[nlev],T[nlyr],dt;
     double Eup[nlev],Edown[nlev],deltaE[nlyr];
 
     //pressure profile
@@ -79,60 +110,33 @@ int main()
     for (int i=0; i < nlev; i++) {
         Tnlev[i] = 200.0 + ((double)random() / (double) RAND_MAX)*100;
     }
-    //layer temperature, potential temperature, pressure
+    //layer temperature, pressure
     for (int i=0; i < nlyr; i++) {
         T[i] = (Tnlev[i] + Tnlev[i+1]) / 2.0;
         plyr[i]=(p[i] + p[i+1]) / 2.0;
-        theta[i] = T2theta(T[i], plyr[i]);
     }
     //time loop
     while(t<years*60*60*24*365){
-	dt = 15*60;
-	for(int inlyr=0; inlyr<nlyr; inlyr++){
-	    tmp_T[inlyr] = T[inlyr];
-	}
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
         //window atmosphere
 	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
 
-	//find right time step
-	while(1==1){
-	    //new T
-	    dT(deltaE,T,nlyr,dp,dt);
-	    //convection
-    	    for (int inlyr = 0; inlyr < nlyr; inlyr++){
-		theta[inlyr] = T2theta(T[inlyr], plyr[inlyr]);
-    	    }
-    	    convection(T,nlyr);
-    	    for (int inlyr=0; inlyr < nlyr; inlyr++){
-        	T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
-    	    }
-	    //absolute values of temperature difference
-	    absDeltaT(T, tmp_T, deltaT, nlyr);
-	    //find biggest temperature change
-	    convection(deltaT,nlyr);
-	    if(deltaT[0]>1.0){
-		break;
-	    }
-	    else{
-		dt += 15*60;
-	    }
-	    if(dt>60*60*24){break;}
-	}
+	dt = findT(deltaE,T,plyr,nlyr,dp);
 	t += dt;
-	printf("%6.3f %6.2f %6.2f\n",T[nlyr-1],deltaE[nlyr-1],deltaE[0]);
+
+	printf("%6.3f %6.1f\n",T[nlyr-1],dt/(60*60));
     }
     //p to z
     z[nlev-1] = 0.;
     for(int i=nlev-2; i>=0; i--){
 	z[i] = z[i+1] + dp2dz(100,plyr[i],T[i]);
     }
-    printf("tau_total =%6.1f after %6.1f years\n",tau_total,t/(365.*24*60*60));
+    printf("tau_total = %6.1f after %6.1f years\n",tau_total,t/(365.*24*60*60));
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
-    printf("z[km], T, theta:\n");
+    printf("z[km], T[K]:\n");
     for (int i=0; i < nlyr; i++){
-        printf("%6.3f %6.3f %6.3f\n",z[i]*1e-3,T[i],theta[i]);
+        printf("%6.3f %6.3f \n",z[i]*1e-3,T[i]);
     }
 }
 
