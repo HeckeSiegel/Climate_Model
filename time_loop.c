@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include "thermal_radiation.h"
+#include <unistd.h>
+#include "gnuplot_i.h"
 
 #define RA 287.0
 #define CP 1005.0
 #define g 9.81
-#define Eearth 240. // W/m^2
+#define Eearth 235. // W/m^2
 #define sigma 5.670374e-8
 
 double T2theta(double T, double p){
@@ -55,8 +57,8 @@ void absDeltaT(double *T, double *tmp_T, double *deltaT, int nlyr){
 	}
     }
 }
-double findT(double *deltaE, double *T, double *plyr, int nlyr, double dp){
-    double deltaT[nlyr],tmp_T[nlyr], theta[nlyr];
+double findT(double *deltaE, double *T,double *theta, double *plyr, int nlyr, double dp, double K){
+    double deltaT[nlyr],tmp_T[nlyr];
     double dt =15*60;
     for(int inlyr=0; inlyr<nlyr; inlyr++){
 	tmp_T[inlyr] = T[inlyr];
@@ -68,7 +70,7 @@ double findT(double *deltaE, double *T, double *plyr, int nlyr, double dp){
     	for (int inlyr = 0; inlyr < nlyr; inlyr++){
 	    theta[inlyr] = T2theta(T[inlyr], plyr[inlyr]);
     	}
-    	convection(T,nlyr);
+    	convection(theta,nlyr);
     	for (int inlyr=0; inlyr < nlyr; inlyr++){
     	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
     	}
@@ -76,7 +78,7 @@ double findT(double *deltaE, double *T, double *plyr, int nlyr, double dp){
 	absDeltaT(T, tmp_T, deltaT, nlyr);
 	//find biggest temperature change
 	convection(deltaT,nlyr);
-	if(deltaT[0]>0.5){ // we want temperature change of at least 1K
+	if(deltaT[0]>K){ // we want temperature change of at least K Kelvin
 	    break;
 	}
 	else{
@@ -91,14 +93,19 @@ int main()
     double t = 0.;
     int years = 1;
     double p0 = 1000.0; //hPa
-    int nlev = 11;
+    int nlev = 21;
     int nlyr = nlev - 1;
     int nwvl = 3;
     double tau_total = 1.0;
 
+    
+    int tcounter=0;
+    gnuplot_ctrl *g1;
+    g1 = gnuplot_init();
+    
 
     double p[nlev],plyr[nlyr],z[nlev];
-    double Tnlev[nlev],T[nlyr],dt;
+    double Tnlev[nlev],T[nlyr],dt,theta[nlyr];
     double Eup[nlev],Edown[nlev],deltaE[nlyr];
 
     //pressure profile
@@ -121,22 +128,38 @@ int main()
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
         //window atmosphere
 	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
-
-	dt = findT(deltaE,T,plyr,nlyr,dp);
+	dt = findT(deltaE,T,theta,plyr,nlyr,dp,2.);
+	
 	t += dt;
+	//p to z
+    	z[nlev-1] = 0.;
+	z[nlev-2] = dp2dz(p[nlev-1]-plyr[nlyr-1],plyr[nlyr-1],T[nlyr-1]);
+    	for(int i=nlev-3; i>=0; i--){
+		z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
+    	}
+	
+	/* number of time steps */
+        tcounter++;
+	if (tcounter%10 == 0) {
+      
+      		gnuplot_resetplot  (g1);  /* start with new plot rather than plotting into exisiting one */
+      		gnuplot_setstyle   (g1, "linespoints");      /* draw lines and points */
+      		gnuplot_set_xlabel (g1, "temperature [K]");  /* xaxis label */
+      		gnuplot_set_ylabel (g1, "altitude [m]");    /* yaxis label */
+      
+      		/* plot temperature T as function of z and label with temperature */
+      		gnuplot_plot_xy   (g1, T, z, nlyr, "Temperature") ;
+		sleep(1); /* wait a second */
+    	 }
+    }
+    /* close plot */
+    gnuplot_close (g1) ;
 
-	printf("%6.3f %6.1f\n",T[nlyr-1],dt/(60*60));
-    }
-    //p to z
-    z[nlev-1] = 0.;
-    for(int i=nlev-2; i>=0; i--){
-	z[i] = z[i+1] + dp2dz(100,plyr[i],T[i]);
-    }
     printf("tau_total = %6.1f after %6.1f years\n",tau_total,t/(365.*24*60*60));
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
     printf("z[km], T[K]:\n");
     for (int i=0; i < nlyr; i++){
-        printf("%6.3f %6.3f \n",z[i]*1e-3,T[i]);
+        printf("%6.3f %6.3f %6.3f\n",z[i]*1e-3,T[i],theta[i]);
     }
 }
 

@@ -7,7 +7,7 @@
 #define c 2.99792458e8 // m/s
 #define kB 1.38064852e-23 // m^2kgs^-2K^-1
 #define sigma 5.67e-8
-#define Eearth 240.4
+#define Eearth 235.
 #define Evenus 261.
 
 double B_gray(double T){
