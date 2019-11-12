@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "thermal_radiation.h"
-#include <unistd.h>
-#include "gnuplot_i.h"
 
 #define RA 287.0
 #define CP 1005.0
@@ -47,21 +45,15 @@ void convection(double *theta, int size){
 int main()
 {
     double t = 0.;
-    int years = 1;
+    int years = 2;
     double p0 = 1000.0; //hPa
     int nlev = 21;
     int nlyr = nlev - 1;
     int nwvl = 3;
     double tau_total = 1.0;
 
-    
-    int tcounter=0;
-    gnuplot_ctrl *g1;
-    g1 = gnuplot_init();
-    
-
     double p[nlev],plyr[nlyr],z[nlev];
-    double Tnlev[nlev],T[nlyr],dt,theta[nlyr],deltaT[nlyr];
+    double Tnlev[nlev],T[nlyr],theta[nlyr],deltaT[nlyr],dt;
     double Eup[nlev],Edown[nlev],deltaE[nlyr];
 
     //pressure profile
@@ -79,12 +71,13 @@ int main()
         plyr[i]=(p[i] + p[i+1]) / 2.0;
     }
     //time loop
-    while(1==1){
+    while(t<years*60*60*24*365){
 	dt = 15*60;
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
         //window atmosphere
 	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
+
 	//find dt
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
 		deltaT[inlyr] = E2T(deltaE[inlyr],dp);
@@ -108,33 +101,16 @@ int main()
     	for (int inlyr=0; inlyr < nlyr; inlyr++){
     	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
     	}
-	printf("%6.3f %6.3f\n", T[nlyr-1],deltaE[nlyr-1]);
-	//p to z
-    	z[nlev-1] = 0.;
-	z[nlev-2] = dp2dz(p[nlev-1]-plyr[nlyr-1],plyr[nlyr-1],T[nlyr-1]);
-    	for(int i=nlev-3; i>=0; i--){
-		z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
-    	}
-	
-	/* number of time steps */
-        tcounter++;
-	if (tcounter%10 == 0) {
-      
-      		gnuplot_resetplot  (g1);  /* start with new plot rather than plotting into exisiting one */
-      		gnuplot_setstyle   (g1, "linespoints");      /* draw lines and points */
-      		gnuplot_set_xlabel (g1, "temperature [K]");  /* xaxis label */
-      		gnuplot_set_ylabel (g1, "altitude [m]");    /* yaxis label */
-      
-      		/* plot temperature T as function of z and label with temperature */
-      		gnuplot_plot_xy   (g1, T, z, nlyr, "Temperature") ;
-		sleep(1);
-    	 }
+	printf("%6.6f %6.6f\n", T[nlyr-1],E2T(deltaE[nlyr-1],dp));
 	t += dt;
-	//if(E2T(deltaE[nlyr-1],dp)*dt < 0.01){
+	
     }
-    /* close plot */
-    gnuplot_close (g1) ;
-
+    //p to z
+    z[nlev-1] = 0.;
+    z[nlev-2] = dp2dz(p[nlev-1]-plyr[nlyr-1],plyr[nlyr-1],T[nlyr-1]);
+    for(int i=nlev-3; i>=0; i--){
+	z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
+    }
     printf("tau_total = %6.1f after %6.1f years\n",tau_total,t/(365.*24*60*60));
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
     printf("z[km], T[K]:\n");
