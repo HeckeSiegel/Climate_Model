@@ -6,9 +6,8 @@
 #define h 6.62607015e-34 //Js
 #define c 2.99792458e8 // m/s
 #define kB 1.38064852e-23 // m^2kgs^-2K^-1
-#define sigma 5.67e-8
+#define sigma 5.670374e-8
 #define Eearth 235.
-#define Evenus 261.
 
 double B_gray(double T){
     return sigma*pow(T,4)/pi;
