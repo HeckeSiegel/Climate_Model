@@ -73,7 +73,7 @@ double plotZ2T(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl
     }
     //time loop
     while(1==1){
-	Tsurf = T[nlyr-1];
+	Tsurf = T[0];
 	dt = 15*60;
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
@@ -125,11 +125,12 @@ double plotZ2T(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl
 	t += dt;
 	printf("T(surface) = %6.6f , z(surface in km) = %6.6f\n", T[nlyr-1],z[nlyr-1]*1e-3);
 	//if the change in surface temperature is small enough the system is in equilibrium
-	if(((Tsurf-T[nlyr-1]) < equi && (Tsurf-T[nlyr-1]) > 0) || ((Tsurf-T[nlyr-1]) > -equi && (Tsurf-T[nlyr-1]) < 0)){
+	if(((Tsurf-T[0]) < equi && (Tsurf-T[0]) > 0) || ((Tsurf-T[0]) > -equi && (Tsurf-T[0]) < 0)){
 	    break;
 	}
     }
     /* close plot */
+    sleep(50);
     gnuplot_close (g1) ;
     return t;
 }
@@ -158,7 +159,7 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
     }
     //time loop
     while(1==1){
-	Tsurf = T[nlyr-1];
+	Tsurf = T[0];
 	dt = 15.*60.;
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
@@ -171,7 +172,7 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 		if(deltaT[inlyr]<0.){deltaT[inlyr] = -deltaT[inlyr];}
 	}
 	convection(deltaT,nlyr);
-	while(deltaT[0]*dt <= 1.){
+	while(deltaT[0]*dt <= 0.5){
 		dt += 15*60;
 		if(dt > 60*60*24){break;};
 	}
@@ -189,9 +190,9 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
     	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
     	}
 	t += dt;
-	printf("T(surface) = %6.6f , t(days) = %6.6f\n", T[nlyr-1],t/(60.*60.*24.));
+	printf("T(toa) = %6.6f , t(days) = %6.6f\n", T[0],t/(60.*60.*24.));
 	//if the change in surface temperature is small enough the system is in equilibrium
-	if(((Tsurf-T[nlyr-1]) < equi && (Tsurf-T[nlyr-1]) > 0) || ((Tsurf-T[nlyr-1]) > -equi && (Tsurf-T[nlyr-1]) < 0)){
+	if(((Tsurf-T[0]) < equi && (Tsurf-T[0]) > 0) || ((Tsurf-T[0]) > -equi && (Tsurf-T[0]) < 0)){
 	    break;
 	}
 	
@@ -205,109 +206,51 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
     return t;
 }
 double plotT2tau(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl, double tau_min, double tau_max, int tau_size, double *Edown, double *Eup){
-    double p0 = 1000.0; //hPa
-    double equi = 1e-4;
-    double t = 0;
+    double t = 0.;
     double tau_step = (tau_max - tau_min )/(tau_size-1);
-    double p[nlev],plyr[nlyr];
-    double Tnlev[nlev],deltaT[nlyr],dt,Tsurf,tau[tau_size],Tequ[tau_size];
-    double deltaE[nlyr];
+    double tau[tau_size],Tequ[tau_size];
     
     gnuplot_ctrl *g1;
     g1 = gnuplot_init();
 
-    //pressure profile
-    for (int inlev = 0; inlev < nlev; inlev++) {
-        p[inlev] = p0 * (double) inlev / (double) nlyr;
-    }
-    double dp = p[1]-p[0];
-    //random level temperature profile
-    for (int inlev=0; inlev < nlev; inlev++) {
-        Tnlev[inlev] = 200.0 + ((double)random() / (double) RAND_MAX)*100;
-    }
-    //layer temperature, pressure
-    for (int inlev=0; inlev < nlyr; inlev++) {
-        T[inlev] = (Tnlev[inlev] + Tnlev[inlev+1]) / 2.0;
-        plyr[inlev]=(p[inlev] + p[inlev+1]) / 2.0;
-    }
     int count = 0;
-    //time loop
+    //different taus
     for (double tau_total=tau_min; tau_total<=tau_max; tau_total += tau_step){
-    t = 0.;
-    while(1==1){
-	Tsurf = T[nlyr-1];
-	dt = 15*60;
-        // gray atmosphere
-        //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
-        //window atmosphere
-	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
-	//find dt
-	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		deltaT[inlyr] = E2T(deltaE[inlyr],dp);
-		if(deltaT[inlyr]<0.){deltaT[inlyr] = -deltaT[inlyr];}
-	}
-	convection(deltaT,nlyr);
-	while(deltaT[0]*dt <= 1.){
-		dt += 15*60;
-		if(dt > 60*60*24){break;};
-	}
-
-	//new T with calculated dt
-	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		T[inlyr] += E2T(deltaE[inlyr],dp)*dt;
-	}
-	//convection
-    	for (int inlyr = 0; inlyr < nlyr; inlyr++){
-	    theta[inlyr] = T2theta(T[inlyr], plyr[inlyr]);
-    	}
-    	convection(theta,nlyr);
-    	for (int inlyr=0; inlyr < nlyr; inlyr++){
-    	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
-    	}
-	//p to z
-    	z[nlev-1] = 0.;
-	z[nlev-2] = dp2dz(p[nlev-1]-plyr[nlyr-1],plyr[nlyr-1],T[nlyr-1]);
-    	for(int i=nlev-3; i>=0; i--){
-		z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
-    	}
-	t += dt;
-        //printf("T(surface) = %6.6f , t(days) = %6.6f\n", T[nlyr-1],t/(60.*60.*24.));
-	//if the change in surface temperature is small enough the system is in equilibrium
-	if(((Tsurf-T[nlyr-1]) < equi && (Tsurf-T[nlyr-1]) > 0) || ((Tsurf-T[nlyr-1]) > -equi && (Tsurf-T[nlyr-1]) < 0)){
-	    break;
-	}
-    }
-    tau[count] = tau_total;
-    Tequ[count] = T[nlyr-1];
-    
-    printf("Tsurf(%6.2f) = %6.3f\n",tau[count],Tequ[count]);
-    
+        t = timeLoop(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup);
+        tau[count] = tau_total;
+        Tequ[count] = T[nlyr-1];
+        printf("Tsurf(%6.2f) = %6.3f\n",tau[count],Tequ[count]);
+	count++;
     }
     //gnuplot_resetplot  (g1);  /* start with new plot rather than plotting into exisiting one */
     gnuplot_setstyle   (g1, "linespoints");      /* draw lines and points */
     gnuplot_set_xlabel (g1, "optical thickness tau");  /* xaxis label */
     gnuplot_set_ylabel (g1, "surface temperature [K]");    /* yaxis label */
     /* plot temperature T as function of z and label with temperature */
-    gnuplot_plot_xy   (g1, tau, Tequ, nlyr, "Temperature") ;
+    gnuplot_plot_xy   (g1, tau, Tequ, count, "Temperature") ;
+    
     sleep(10);	 
     /* close plot */
-    gnuplot_close (g1) ;
+    //gnuplot_close (g1) ;
+
     return t;
 }
 int main()
 {
-    int nlyr = 20;
+    int nlyr = 50;
     int nlev = nlyr + 1;
     int nwvl = 3;
-    double tau_total = 98.0;
-    double tau_min = 0.5;
-    double tau_max = 2.0;
-    double tau_size = 16;
+    double tau_total = 50.0;
+    double tau_min = 0.1;
+    double tau_max = 20.1;
+    int tau_size = (tau_max-tau_min)/1. + 1;
     double z[nlev];
     double T[nlyr],theta[nlyr],t;
     double Eup[nlev],Edown[nlev];
 
-    t = timeLoop(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup);
+    //t = timeLoop(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup);
+    t = plotZ2T(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup);
+    //t = plotT2tau(T,theta,z,nlyr,nlev,nwvl,tau_min,tau_max,tau_size,Edown,Eup);
 
     printf("tau_total = %6.1f after %6.2f years\n",tau_total,t/(365.*24*60*60));
     printf("Eup[TOA] = %6.3f\n",Eup[0]);
