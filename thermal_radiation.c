@@ -89,7 +89,6 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
     double B_surface, B_layer[nlyr];
     double dtau = tau_total/nlyr;
     double tmp_Edown[nlev], tmp_Eup[nlev];
-    //double tmp_B_surface,tmp_B_layerF,tmp_B_layerN;
 
     for (int inlyr = 0; inlyr< nlyr; inlyr++){
 	for (int inwvl = 0; inwvl<nwvl; inwvl++){
@@ -104,18 +103,12 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
 	Eup[inlev] = 0.;
 	Edown[inlev] = 0.;
     }
-    /*tmp_B_surface = 0.;
-    tmp_B_layerF = 0.;
-    tmp_B_layerN = 0.;*/
     for (int iwvl=0; iwvl<nwvl; iwvl++){
         B_surface = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[nlyr-1]);
         for (int inlyr = 0; inlyr< nlyr; inlyr++){
             B_layer[inlyr] = B_int(wvlband[iwvl][0],wvlband[iwvl][1],T[inlyr]);
 	    tmp_tau[inlyr] = tau[iwvl][inlyr];
         }
-	/*tmp_B_surface += B_surface;
-	tmp_B_layerF += B_layer[5];
-	tmp_B_layerN += B_layer[0];*/
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
 	for(int inlev=0; inlev<nlev; inlev++){
 	    Eup[inlev] += tmp_Eup[inlev];
@@ -123,5 +116,27 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
         }
     }
     dE(deltaE,Edown,Eup,nlyr);
-    //printf("%6.3f %6.3f %6.3f\n",tmp_B_surface,tmp_B_layerF,tmp_B_layerN);
+}
+void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){
+    double tmp_tau[nlyr];
+    double B_surface, B_layer[nlyr];
+    double tmp_Edown[nlev], tmp_Eup[nlev];
+
+    for (int inlev=0; inlev<nlev; inlev++){
+	Eup[inlev] = 0.;
+	Edown[inlev] = 0.;
+    }
+    for (int iwvl=0; iwvl<(nwvl-1); iwvl++){
+        B_surface = B(wvl[iwvl],T[nlyr-1])*(wvl[iwvl+1]-wvl[iwvl]);
+        for (int inlyr = 0; inlyr< nlyr; inlyr++){
+            B_layer[inlyr] = B(wvl[iwvl],T[inlyr])*(wvl[iwvl+1]-wvl[iwvl]);
+	    tmp_tau[inlyr] = tau[iwvl][inlyr];
+        }
+    	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+	for(int inlev=0; inlev<nlev; inlev++){
+	    Eup[inlev] += tmp_Eup[inlev];
+	    Edown[inlev] += tmp_Edown[inlev];
+        }
+    }
+    dE(deltaE,Edown,Eup,nlyr);
 }

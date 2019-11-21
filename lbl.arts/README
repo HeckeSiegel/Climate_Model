@@ -1,0 +1,12 @@
+** fpda.lbl.atm
+ six columns: z[km], p[hPa], T[K], air density [1/cm**3], H2O [ppm], CO2 [ppm];
+ altitude, pressure, temperature, density, H2O and CO2 volume mixing ratios  at 21 levels
+
+** lbl.co2.asc, lbl.h2o.asc
+ Absorption by CO2 and water vapor
+ 21 columns: wavelength [nm], delta_tau[] for the 20 layers 
+ defined in lbl.fpda.atm. The delta_tau's are sorted top-down! 
+ That is, column 2 is for layer 50-0 hPa, column 21 for 
+ layer 1000-950 hPa.
+
+

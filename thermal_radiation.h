@@ -8,5 +8,6 @@ void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, dou
 void dE(double *deltaE, double *Edown, double *Eup, int nlyr);
 void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total, double *Edown, double *Eup, double *deltaE);
 void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup, double *deltaE);
+void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE);
 
 #endif
