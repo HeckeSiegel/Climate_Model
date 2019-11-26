@@ -119,7 +119,7 @@ void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_tot
 }
 void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){
     double tmp_tau[nlyr];
-    double B_surface, B_layer[nlyr];
+    double dwvl,central_wvl, B_surface, B_layer[nlyr];
     double tmp_Edown[nlev], tmp_Eup[nlev];
 
     for (int inlev=0; inlev<nlev; inlev++){
@@ -127,9 +127,11 @@ void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, do
 	Edown[inlev] = 0.;
     }
     for (int iwvl=0; iwvl<(nwvl-1); iwvl++){
-        B_surface = B(wvl[iwvl],T[nlyr-1])*(wvl[iwvl+1]-wvl[iwvl]);
+	dwvl = (wvl[iwvl+1]-wvl[iwvl])*1e-9;
+	central_wvl = wvl[iwvl]*1e-9 + dwvl/2.;
+        B_surface = B(central_wvl,T[nlyr-1])*dwvl;
         for (int inlyr = 0; inlyr< nlyr; inlyr++){
-            B_layer[inlyr] = B(wvl[iwvl],T[inlyr])*(wvl[iwvl+1]-wvl[iwvl]);
+            B_layer[inlyr] = B(central_wvl,T[inlyr])*dwvl;
 	    tmp_tau[inlyr] = tau[iwvl][inlyr];
         }
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);

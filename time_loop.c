@@ -71,7 +71,7 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
     }
     //time loop
     while(1==1){
-	Ttoa = T[0];
+	Ttoa = T[nlyr-1];
 	dt = 15.*60.;
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
@@ -86,11 +86,8 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 		if(deltaT[inlyr]<0.){deltaT[inlyr] = -deltaT[inlyr];}
 	}
 	convection(deltaT,nlyr);
-	while(deltaT[0]*dt <= 0.5){
-		dt += 15*60;
-		if(dt > 60*60*24){break;};
-	}
-
+	dt = 1./deltaT[0];
+	if(dt > 60*60*12){dt = 60*60*12;}
 	//################ new T with calculated dt ####################
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
 		T[inlyr] += E2T(deltaE[inlyr],dp)*dt;
@@ -104,9 +101,9 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
     	    T[inlyr] = theta2T(theta[inlyr],plyr[inlyr]);
     	}
 	t += dt;
-	printf("T(toa) = %6.6f , t(days) = %6.6f\n", T[0],t/(60.*60.*24.));
+	printf("T(surf) = %6.6f , t(days) = %6.6f\n", T[nlyr-1],t/(60.*60.*24.));
 	//if the change in toa temperature is small enough the system is in equilibrium
-	if(((Ttoa-T[0]) < equi && (Ttoa-T[0]) > 0) || ((Ttoa-T[0]) > -equi && (Ttoa-T[0]) < 0)){
+	if(((Ttoa-T[nlyr]) < equi && (Ttoa-T[nlyr]) > 0) || ((Ttoa-T[nlyr]) > -equi && (Ttoa-T[nlyr]) < 0)){
 	    break;
 	}
 	
@@ -260,6 +257,7 @@ int main()
     int tau_size = (tau_max-tau_min)/1. + 1;
     
     //for line by line atmosphere
+    int status = 0;
     int nwvlco2 = 0;
     int nwvlh2o = 0;
     int nyco2 = 0;
@@ -269,8 +267,8 @@ int main()
     double *wvnh2o = 0; 
     double **tauh2o = 0;
 
-    ASCII_file2xy2D ("lbl.arts/lbl.co2.asc", &nwvlco2, &nyco2, &wvnco2, &tauco2);
-    ASCII_file2xy2D ("lbl.arts/lbl.h2o.asc", &nwvlh2o, &nyh2o, &wvnh2o, &tauh2o);
+    status = ASCII_file2xy2D ("lbl.arts/lbl.co2.asc", &nwvlco2, &nyco2, &wvnco2, &tauco2);
+    status = ASCII_file2xy2D ("lbl.arts/lbl.h2o.asc", &nwvlh2o, &nyh2o, &wvnh2o, &tauh2o);
     
     int nlyrlbl = nyco2;
     int nlevlbl = nlyrlbl + 1;
@@ -287,9 +285,9 @@ int main()
     //############################ call different functions ##########################################
 
     //t = timeLoop(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup,wvnco2,tauco2); //for grey and window atmosphere
-    //t = timeLoop(Tlbl,thetalbl,zlbl,nlyrlbl,nlevlbl,nwvlco2,tau_total,Edownlbl,Euplbl,wvnco2,tauco2); //for line by line atmosphere
+    t = timeLoop(Tlbl,thetalbl,zlbl,nlyrlbl,nlevlbl,nwvlco2,tau_total,Edownlbl,Euplbl,wvnco2,tauco2); //for line by line atmosphere
     //t = plotTimeLoop(T,theta,z,nlyr,nlev,nwvl,tau_total,Edown,Eup,wvnco2,tauco2);
-    t = plotTimeLoop(Tlbl,thetalbl,zlbl,nlyrlbl,nlevlbl,nwvlco2,tau_total,Edownlbl,Euplbl,wvnco2,tauco2);
+    //t = plotTimeLoop(Tlbl,thetalbl,zlbl,nlyrlbl,nlevlbl,nwvlco2,tau_total,Edownlbl,Euplbl,wvnco2,tauco2);
     //t = plotT2tau(T,theta,z,nlyr,nlev,nwvl,tau_min,tau_max,tau_size,Edown,Eup);
 
     //################################################################################################
