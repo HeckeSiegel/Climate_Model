@@ -181,7 +181,7 @@ double kTimeLoop(int nlyr, int nlev){
     cfpda_rrtm_lw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
 		     cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
 		     &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
-    //time loop
+    //time loop	
     while(1==1){
 	Ttoa = T[nlyr-1]; // to compare temperature between 2 time steps
         //########################## call rrtm every 1000th time step ####################################################
@@ -193,7 +193,11 @@ double kTimeLoop(int nlyr, int nlev){
 	//################################################################################################################
 
 	//###################################### use k atmosphere ########################################################
+	printf("before k \n");
+	fflush(stdout);
         kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE);
+	printf("after k \n");
+	fflush(stdout);
         //################################################################################################################
 
 	//################ find dt #######################################################################################
@@ -226,6 +230,7 @@ double kTimeLoop(int nlyr, int nlev){
 	    z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
         }
 	printf("T(surf) = %6.3f\n", T[nlyr-1]);
+	fflush(stdout);
 	
 	//################################### print into file to make plot ###############################################
 	/*char buffer[64]; // filename buffer
@@ -244,6 +249,10 @@ double kTimeLoop(int nlyr, int nlev){
 	}
 	
     }
+    ASCII_free_double(tau, nbands);
+    ASCII_free_double(wgt_lw, nbands);
+    free(band_lbound);
+    free(band_ubound);
     return t;
 }
 //######################## plots height against temperature for every layer in every time step while running the c program #######################
@@ -367,13 +376,13 @@ int main()
     double T[nlyr],theta[nlyr],t;
     double Eup[nlev],Edown[nlev];
     //####################################################################################################################
-
+  
     //##################### for plotting different taus in grey and 3-band atmospheres ###################################
     double tau_min = 0.;
     double tau_max = 2.0;
     int tau_size = (tau_max-tau_min)/0.1 + 1;
     //####################################################################################################################
-
+   
     //################################## for line by line atmosphere #####################################################
     int nwvlco2 = 0;
     int nwvlh2o = 0;
@@ -383,10 +392,10 @@ int main()
     double **tauco2 = NULL; 
     double *wvnh2o = NULL; 
     double **tauh2o = NULL;
-
+   
     ASCII_file2xy2D ("lbl.arts/lbl.co2.asc", &nwvlco2, &nyco2, &wvnco2, &tauco2);
     ASCII_file2xy2D ("lbl.arts/lbl.h2o.asc", &nwvlh2o, &nyh2o, &wvnh2o, &tauh2o);
-
+   
     int nlyrlbl = nyco2;
     int nlevlbl = nlyrlbl + 1;
     double zlbl[nlevlbl];
@@ -399,7 +408,7 @@ int main()
 	}
     }
     //###################################################################################################################
-
+   
     //################################## for k-distribution atmosphere ##################################################
     int knlyr = 20;
     int knlev = knlyr + 1;

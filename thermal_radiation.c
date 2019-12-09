@@ -16,8 +16,11 @@ double B(double wvl, double T){
     return 2*h*pow(c,2)/pow(wvl,5) * 1./(exp(h*c/(wvl*kB*T))-1.);
 }
 double B_int(double lambda_1, double lambda_2, double T){
-    double dwvl = 1e-7;
-    int N = (lambda_2-lambda_1)/dwvl;
+    if(lambda_2-lambda_1 < 1e-6){
+	return B(lambda_1+(lambda_2-lambda_1)/2.,T)*(lambda_2-lambda_1);
+    }
+    double dwvl = 1e-6;
+    int N = (int)ceil((lambda_2-lambda_1))/dwvl;
     double wvl = lambda_1+dwvl/2.;
     double res = 0.;
     //integration
@@ -152,9 +155,9 @@ void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int 
 	Edown[inlev] = 0.;
     }
     for (int inbands=0; inbands<nbands; inbands++){
-        B_surface = B_int(band_lbound[inbands],band_ubound[inbands],T[nlyr-1])*wgt_lw[inbands][nlyr-1];
+        B_surface = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[nlyr-1])*wgt_lw[inbands][nlyr-1];
         for (int inlyr = 0; inlyr< nlyr; inlyr++){
-            B_layer[inlyr] = B_int(band_lbound[inbands],band_ubound[inbands],T[inlyr])*wgt_lw[inbands][nlyr];
+            B_layer[inlyr] = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[inlyr])*wgt_lw[inbands][inlyr];
 	    tmp_tau[inlyr] = tau[inbands][inlyr];
         }
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
