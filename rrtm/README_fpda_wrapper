@@ -1,0 +1,52 @@
+Installation HOWTO and instructions on how to use them in your climate model code:
+
+First, ignore all the shortwave routines(_sw) and try to understand the longwave(_lw) stuff.
+
+change into the rrtm directory and try to compile it:
+ cd rrtm && cmake . && make -j && make install
+
+if that was successful you should find something like these files:
+ ls ./install/lib/
+             #~ libfpda_rrtm_lw.a  libfpda_rrtm_sw.a  libgnuplot_i.a
+
+ ls ./install/bin/
+             #~ rrtm_example_lw  rrtm_example_sw
+
+there are actually two versions:
+   # _FJ with 2D arrays implemented as 1D Fortran-style arrays, recommended by Fabian Jakub
+   # _BM with 2D arrays implemented as 2D C-style arrays, recommended by Bernhard Mayer
+
+History told us that students are indeed confused with the Fortran style arrays, so please, just ignore those and stick with _BM examples.
+
+run the examples:
+  ./install/bin/rrtm_example_lw_BM
+
+
+have a look at the header files of the wrapper:
+  vim ./install/include/fpda_rrtm_lw.h
+  vim ./install/include/fpda_rrtm_sw.h
+
+have a look at the example codes:
+  vim ./src/fpda_example_lw_BM.c
+  vim ./src/fpda_example_sw_BM.c
+
+
+implement it into your model.
+  cd <your_model_path>
+
+when compiling, you need to add the include path to the header files:
+  gcc -c mymodel.c -I./rrtm/install/include/
+
+when linking your model you need to link against the rrtm libary and use the gfortran linker command to include fortran specific functions:
+  gfortran -L./rrtm/install/lib/ mymodel.o -lm -lfpda_rrtm_lw -lfpda_rrtm_sw -lgnuplot_i
+
+  # -L adds the following path to the linker includes i.e. tells the linker where to additionally look for libs
+  # -l add librarys -- hence -lm adds the math library i.e. adds the libm.a
+  # -lfpda_rrtm_lw adds the libfpda_rrtm_lw.a (those libraries we created above)
+
+
+If any questions or problems arise please find me in my office.
+
+Sincerely
+
+Fabian

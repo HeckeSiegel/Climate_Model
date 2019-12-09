@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw/fpda_rrtm_lw.h
+stdlib.h
+-
+
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/src/fpda_example_lw_BM.c
+stdio.h
+-
+math.h
+-
+unistd.h
+-
+fpda_rrtm_lw.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/src/fpda_rrtm_lw.h
+

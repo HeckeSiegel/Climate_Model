@@ -142,3 +142,26 @@ void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, do
     }
     dE(deltaE,Edown,Eup,nlyr);
 }
+void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int nbands, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){
+    double tmp_tau[nlyr];
+    double B_surface, B_layer[nlyr];
+    double tmp_Edown[nlev], tmp_Eup[nlev];
+
+    for (int inlev=0; inlev<nlev; inlev++){
+	Eup[inlev] = 0.;
+	Edown[inlev] = 0.;
+    }
+    for (int inbands=0; inbands<nbands; inbands++){
+        B_surface = B_int(band_lbound[inbands],band_ubound[inbands],T[nlyr-1])*wgt_lw[inbands][nlyr-1];
+        for (int inlyr = 0; inlyr< nlyr; inlyr++){
+            B_layer[inlyr] = B_int(band_lbound[inbands],band_ubound[inbands],T[inlyr])*wgt_lw[inbands][nlyr];
+	    tmp_tau[inlyr] = tau[inbands][inlyr];
+        }
+    	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+	for(int inlev=0; inlev<nlev; inlev++){
+	    Eup[inlev] += tmp_Eup[inlev];
+	    Edown[inlev] += tmp_Edown[inlev];
+        }
+    }
+    dE(deltaE,Edown,Eup,nlyr);
+}

@@ -1,0 +1,8 @@
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/lib/libgnuplot_i.a
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/include//gnuplot_i.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/lib/libfpda_rrtm_lw.a
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/include//fpda_rrtm_lw.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/lib/libfpda_rrtm_sw.a
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/include//fpda_rrtm_sw.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/bin/rrtm_example_lw_BM
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install/bin/rrtm_example_sw_BM

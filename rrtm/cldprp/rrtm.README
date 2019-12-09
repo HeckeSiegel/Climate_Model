@@ -1,0 +1,7 @@
+rrtm.sw  cloud optical properties averaged over shortwave RRTM bands
+  wvl_lower [nm], wvl_upper [nm], qext, omega0, g
+
+rrtm.lw  cloud optical properties averaged over longwave RRTM bands
+  wvl_lower [nm], wvl_upper [nm], qext, omega0, g
+
+rrtm.sw.int, rrtm.lw.int   Same, but in the order returned by the rrtm functions

@@ -1,0 +1,10 @@
+[default]
+name=Default
+runtime=host
+config-opts=
+run-opts=
+prefix=/tmp/.unburden-S.Legler/cache/gnome-builder/install/Climate_Model/host
+app-id=
+postbuild=
+prebuild=
+default=true

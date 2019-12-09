@@ -1,0 +1,67 @@
+RA	window_test.c	6;"	d	file:
+CP	window_test.c	7;"	d	file:
+g	window_test.c	8;"	d	file:
+Eearth	window_test.c	9;"	d	file:
+sigma	window_test.c	10;"	d	file:
+pi	window_test.c	11;"	d	file:
+T2theta	window_test.c	/^double T2theta(double T, double p){$/;"	f
+theta2T	window_test.c	/^double theta2T(double theta, double p){$/;"	f
+E2T	window_test.c	/^double E2T(double E, double p, double t){$/;"	f
+dp2dz	window_test.c	/^double dp2dz(double dp, double p, double T){$/;"	f
+convection	window_test.c	/^void convection(double *theta, int size){$/;"	f
+main	window_test.c	/^int main()$/;"	f
+RA	thermal_radiation_test.c	6;"	d	file:
+CP	thermal_radiation_test.c	7;"	d	file:
+g	thermal_radiation_test.c	8;"	d	file:
+Eearth	thermal_radiation_test.c	9;"	d	file:
+sigma	thermal_radiation_test.c	10;"	d	file:
+pi	thermal_radiation_test.c	11;"	d	file:
+T2theta	thermal_radiation_test.c	/^double T2theta(double T, double p){$/;"	f
+theta2T	thermal_radiation_test.c	/^double theta2T(double theta, double p){$/;"	f
+E2T	thermal_radiation_test.c	/^double E2T(double E, double p, double t){$/;"	f
+dp2dz	thermal_radiation_test.c	/^double dp2dz(double dp, double p, double T){$/;"	f
+convection	thermal_radiation_test.c	/^void convection(double *theta, int size){$/;"	f
+main	thermal_radiation_test.c	/^int main()$/;"	f
+do_nothing	testlblarts.c	/^void do_nothing (double *wvl, double **tau, int nwvl, int nlyr)$/;"	f
+main	testlblarts.c	/^int main (int argc, char **argv)$/;"	f
+pi	thermal_radiation.c	5;"	d	file:
+h	thermal_radiation.c	6;"	d	file:
+c	thermal_radiation.c	7;"	d	file:
+kB	thermal_radiation.c	8;"	d	file:
+sigma	thermal_radiation.c	9;"	d	file:
+Eearth	thermal_radiation.c	10;"	d	file:
+B_gray	thermal_radiation.c	/^double B_gray(double T){$/;"	f
+B	thermal_radiation.c	/^double B(double wvl, double T){$/;"	f
+B_int	thermal_radiation.c	/^double B_int(double lambda_1, double lambda_2, double T){$/;"	f
+alpha	thermal_radiation.c	/^double alpha(double mu, double tau){$/;"	f
+schwarzschild	thermal_radiation.c	/^void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, double *Edown, double *Eup){$/;"	f
+dE	thermal_radiation.c	/^void dE(double *deltaE, double *Edown, double *Eup, int nlyr){$/;"	f
+oneBandAtmosphere	thermal_radiation.c	/^void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup, double *deltaE){$/;"	f
+threeBandAtmosphere	thermal_radiation.c	/^void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup, double *deltaE){$/;"	f
+multiBandAtmosphere	thermal_radiation.c	/^void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){$/;"	f
+kAtmosphere	thermal_radiation.c	/^void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int nbands, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){$/;"	f
+_thermal_radiation_h	thermal_radiation.h	2;"	d
+B_gray	thermal_radiation.h	/^double B_gray(double T);$/;"	p
+B_int	thermal_radiation.h	/^double B_int(double lambda_1, double lambda_2, double T);$/;"	p
+alpha	thermal_radiation.h	/^double alpha(double mu, double tau);$/;"	p
+schwarzschild	thermal_radiation.h	/^void schwarzschild(int nlev, double *tau, double *B_layer, double B_surface, double *Edown, double *Eup);$/;"	p
+dE	thermal_radiation.h	/^void dE(double *deltaE, double *Edown, double *Eup, int nlyr);$/;"	p
+oneBandAtmosphere	thermal_radiation.h	/^void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total, double *Edown, double *Eup, double *deltaE);$/;"	p
+threeBandAtmosphere	thermal_radiation.h	/^void threeBandAtmosphere(int nwvl, int nlyr, int nlev, double *T, double tau_total, double *Edown, double *Eup, double *deltaE);$/;"	p
+multiBandAtmosphere	thermal_radiation.h	/^void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE);$/;"	p
+kAtmosphere	thermal_radiation.h	/^void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int nbands, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE);$/;"	p
+RA	time_loop.c	10;"	d	file:
+CP	time_loop.c	11;"	d	file:
+g	time_loop.c	12;"	d	file:
+Eearth	time_loop.c	13;"	d	file:
+sigma	time_loop.c	14;"	d	file:
+T2theta	time_loop.c	/^double T2theta(double T, double p){$/;"	f
+theta2T	time_loop.c	/^double theta2T(double theta, double p){$/;"	f
+E2T	time_loop.c	/^double E2T(double E, double dp){$/;"	f
+dp2dz	time_loop.c	/^double dp2dz(double dp, double p, double T){$/;"	f
+boltzmann	time_loop.c	/^double boltzmann(double T){$/;"	f
+convection	time_loop.c	/^void convection(double *theta, int size){$/;"	f
+timeLoop	time_loop.c	/^double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl, double tau_total, double *Edown, double *Eup, double *wvl, double **tau){$/;"	f
+plotTimeLoop	time_loop.c	/^double plotTimeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl, double tau_total, double *Edown, double *Eup, double *wvl, double **tau){$/;"	f
+plotT2tau	time_loop.c	/^double plotT2tau(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl, double tau_min, double tau_max, int tau_size, double *Edown, double *Eup, double *wvl, double **taulbl){$/;"	f
+main	time_loop.c	/^int main()$/;"	f

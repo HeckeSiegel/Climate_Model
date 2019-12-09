@@ -1,0 +1,1 @@
+/usr/bin/gfortran    -cpp -ffree-line-length-none                                                               -fno-backtrace -fno-range-check -O3                                                       CMakeFiles/fpda_example_lw.dir/fpda_example.F90.o  -o fpda_example_lw libfpda_rrtm_lw.a 

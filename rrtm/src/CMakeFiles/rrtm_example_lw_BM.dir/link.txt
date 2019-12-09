@@ -1,0 +1,1 @@
+/usr/bin/cc  -cpp --std=c99                                                                             -O3 -ffast-math                                                                            -rdynamic CMakeFiles/rrtm_example_lw_BM.dir/fpda_example_lw_BM.c.o  -o rrtm_example_lw_BM -lm ../rrtm_lw/libfpda_rrtm_lw.a ../gnuplot_i/libgnuplot_i.a -lgfortran -lm -lquadmath -lm 
