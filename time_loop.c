@@ -140,7 +140,7 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 double kTimeLoop(int nlyr, int nlev){
     double t = 0.;
     double p0 = 1000.0; //hPa
-    double equi = 1e-4; //threshold for breaking the time loop
+    double equi = 1e-5; //threshold for breaking the time loop
 
     double p[nlev], plyr[nlyr];
     double T[nlyr], theta[nlyr], z[nlyr], deltaT[nlyr], Ttoa, dt;
@@ -153,7 +153,15 @@ double kTimeLoop(int nlyr, int nlev){
     double * band_ubound;   // [nbands]    
     double **tau;   // [nbands][nlyr]       
     double **wgt_lw;        // [nbands][nlyr]       
-
+    
+    //read in h2o and O3 concentrations
+    int nrows = 0;
+    double *tmp1 = NULL;
+    double *tmp2 = NULL; 
+    double *tmp3 = NULL;  
+    double *h20 = NULL;
+    double *o3 = NULL;
+    read_5c_file ("fpda.atm", &tmp1, &tmp2, &tmp3, &h20, &o3, &nrows);
     //pressure profile
     for (int inlev = 0; inlev < nlev; inlev++) {
         p[inlev] = p0 * (double) inlev / (double) nlyr;
@@ -165,8 +173,10 @@ double kTimeLoop(int nlyr, int nlev){
     // temperatures and trace gas concentrations
     for(int inlyr=0; inlyr<nlyr; inlyr++) {
         T[inlyr] = 288. - (nlyr-inlyr-1)*50/(nlyr-1);
-        h2ovmr[inlyr] = 9e-6; //TODO: take from fpda.atm file
-        o3vmr[inlyr] = 5e-9; // TODO: the same
+        h2ovmr[inlyr] = 1e-6*(h20[inlyr+1]+h20[inlyr])/2.;
+	printf("%6.9f \n", h2ovmr[inlyr]);
+        o3vmr[inlyr] = 1e-6*(o3[inlyr+1]+o3[inlyr])/2.;
+	printf("%6.9f \n", o3vmr[inlyr]);
         co2vmr[inlyr] = 400e-6;
         ch4vmr[inlyr] = 10e-6;
         n2ovmr[inlyr] = 320e-9;
@@ -176,28 +186,23 @@ double kTimeLoop(int nlyr, int nlev){
         cfc22vmr[inlyr] = 0;
         ccl4vmr[inlyr] = 0;
     }
-    int k = 1;
     // Call C rrtm routine to get absorption coefficients
-    cfpda_rrtm_lw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
+    /*cfpda_rrtm_lw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
 		     cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
-		     &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
+		     &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);*/
     //time loop	
     while(1==1){
 	Ttoa = T[nlyr-1]; // to compare temperature between 2 time steps
         //########################## call rrtm every 1000th time step ####################################################
-        if(k%1000 == 0){
-	    cfpda_rrtm_lw (nlyr, p, T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
-		     cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
-		     &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
-	}
+	cfpda_rrtm_lw (nlyr, p, T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
+		 cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
+		 &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
 	//################################################################################################################
 
 	//###################################### use k atmosphere ########################################################
-	printf("before k \n");
-	fflush(stdout);
+	
         kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE);
-	printf("after k \n");
-	fflush(stdout);
+	
         //################################################################################################################
 
 	//################ find dt #######################################################################################
@@ -229,8 +234,7 @@ double kTimeLoop(int nlyr, int nlev){
         for(int i=nlev-3; i>=0; i--){
 	    z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
         }
-	printf("T(surf) = %6.3f\n", T[nlyr-1]);
-	fflush(stdout);
+	printf("T(surf) = %6.3f t(days) = %6.3f \n", T[nlyr-1], t/(60.*60.*24));
 	
 	//################################### print into file to make plot ###############################################
 	/*char buffer[64]; // filename buffer
@@ -240,7 +244,7 @@ double kTimeLoop(int nlyr, int nlev){
             fprintf(file,"%6.3f %6.3f\n",z[i]*1e-3,T[i]);
         }
 	fclose(file );
-	k++;*/
+        */
         //################################################################################################################
 
 	//### if the change in toa temperature is small enough the system is in equilibrium ##############################
@@ -249,8 +253,8 @@ double kTimeLoop(int nlyr, int nlev){
 	}
 	
     }
-    ASCII_free_double(tau, nbands);
-    ASCII_free_double(wgt_lw, nbands);
+    //ASCII_free_double(tau, nbands);
+    //ASCII_free_double(wgt_lw, nbands);
     free(band_lbound);
     free(band_ubound);
     return t;
@@ -368,23 +372,23 @@ double plotT2tau(double *T, double *theta, double *z, int nlyr, int nlev, int nw
 int main()
 { 
     //####################### for grey and 3-band atmospheres ############################################################
-    int nlyr = 30;
+    /*int nlyr = 30;
     int nlev = nlyr + 1;
     int nwvl = 3;
     double tau_total = 1.8;
     double z[nlev];
     double T[nlyr],theta[nlyr],t;
-    double Eup[nlev],Edown[nlev];
+    double Eup[nlev],Edown[nlev];*/
     //####################################################################################################################
   
     //##################### for plotting different taus in grey and 3-band atmospheres ###################################
-    double tau_min = 0.;
+    /*double tau_min = 0.;
     double tau_max = 2.0;
-    int tau_size = (tau_max-tau_min)/0.1 + 1;
+    int tau_size = (tau_max-tau_min)/0.1 + 1;*/
     //####################################################################################################################
    
     //################################## for line by line atmosphere #####################################################
-    int nwvlco2 = 0;
+    /*int nwvlco2 = 0;
     int nwvlh2o = 0;
     int nyco2 = 0;
     int nyh2o = 0;
@@ -406,10 +410,11 @@ int main()
 	for (int inlyr = 0; inlyr<nlyrlbl; inlyr++){
 		tauco2[inwvl][inlyr] = 0.*tauco2[inwvl][inlyr] + tauh2o[inwvl][inlyr];
 	}
-    }
+    }*/
     //###################################################################################################################
    
     //################################## for k-distribution atmosphere ##################################################
+    double t;
     int knlyr = 20;
     int knlev = knlyr + 1;
     //###################################################################################################################
@@ -435,10 +440,10 @@ int main()
     fclose(fp);*/
     //###################################################################################################################
 
-    ASCII_free_double(tauh2o, nwvlco2);
+    /*ASCII_free_double(tauh2o, nwvlco2);
     ASCII_free_double(tauco2, nwvlh2o);
     free(wvnco2);
-    free(wvnh2o);
+    free(wvnh2o);*/
 }
 
 

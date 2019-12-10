@@ -6,5 +6,5 @@ Fortran_FLAGS =  -cpp -ffree-line-length-none                                   
 
 Fortran_DEFINES = 
 
-Fortran_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_sw" 
+Fortran_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_sw" 
 

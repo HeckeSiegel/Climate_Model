@@ -19,15 +19,24 @@ double B_int(double lambda_1, double lambda_2, double T){
     if(lambda_2-lambda_1 < 1e-6){
 	return B(lambda_1+(lambda_2-lambda_1)/2.,T)*(lambda_2-lambda_1);
     }
-    double dwvl = 1e-6;
-    int N = (int)ceil((lambda_2-lambda_1))/dwvl;
-    double wvl = lambda_1+dwvl/2.;
-    double res = 0.;
-    //integration
-    for(int i=0; i<N; i++){
-        res += B(wvl+dwvl*i,T)*dwvl;
+    else{
+    	int N = (int)ceil((lambda_2-lambda_1))/1e-6;
+	double dwvl;
+	if(N>50){
+		N = 50;
+		dwvl = (lambda_2-lambda_1)/N;
+	}
+	else{
+    		dwvl = (lambda_2-lambda_1)/N;
+	}
+    	double wvl = lambda_1+dwvl/2.;
+    	double res = 0.;
+    	//integration
+    	for(int i=0; i<N; i++){
+        	res += B(wvl+dwvl*i,T)*dwvl;
+    	}
+    	return res;
     }
-    return res;
 }
 double alpha(double mu, double tau){
     return 1. - exp(-tau/mu);
@@ -147,19 +156,45 @@ void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, do
 }
 void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int nbands, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE){
     double tmp_tau[nlyr];
-    double B_surface, B_layer[nlyr];
+    double B_surface, B_layer[nlyr], tmp_B_surface_int, tmp_B_layer_int[nlyr];
     double tmp_Edown[nlev], tmp_Eup[nlev];
 
     for (int inlev=0; inlev<nlev; inlev++){
 	Eup[inlev] = 0.;
 	Edown[inlev] = 0.;
     }
-    for (int inbands=0; inbands<nbands; inbands++){
-        B_surface = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[nlyr-1])*wgt_lw[inbands][nlyr-1];
-        for (int inlyr = 0; inlyr< nlyr; inlyr++){
-            B_layer[inlyr] = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[inlyr])*wgt_lw[inbands][inlyr];
+
+    tmp_B_surface_int = B_int(1e-2/band_ubound[0],1e-2/band_lbound[0],T[nlyr-1]);
+    B_surface = tmp_B_surface_int*wgt_lw[0][nlyr-1]; 
+    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+	tmp_B_layer_int[inlyr] = B_int(1e-2/band_ubound[0],1e-2/band_lbound[0],T[inlyr]);
+        B_layer[inlyr] = tmp_B_layer_int[inlyr]*wgt_lw[0][inlyr];
+	tmp_tau[inlyr] = tau[0][inlyr];
+    }
+    schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+    for(int inlev=0; inlev<nlev; inlev++){
+	Eup[inlev] += tmp_Eup[inlev];
+	Edown[inlev] += tmp_Edown[inlev];
+    }
+
+    for (int inbands=1; inbands<nbands; inbands++){
+	if(band_ubound[inbands-1]==band_ubound[inbands] && band_lbound[inbands-1]==band_lbound[inbands])
+	{
+	    B_surface = tmp_B_surface_int*wgt_lw[inbands][nlyr-1];
+	    for (int inlyr = 0; inlyr< nlyr; inlyr++){
+            B_layer[inlyr] = tmp_B_layer_int[inlyr]*wgt_lw[inbands][inlyr];
 	    tmp_tau[inlyr] = tau[inbands][inlyr];
-        }
+            }
+	}
+	else{
+	    tmp_B_surface_int = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[nlyr-1]);
+            B_surface = tmp_B_surface_int*wgt_lw[inbands][nlyr-1];
+            for (int inlyr = 0; inlyr< nlyr; inlyr++){
+	    	tmp_B_layer_int[inlyr] = B_int(1e-2/band_ubound[inbands],1e-2/band_lbound[inbands],T[inlyr]);
+            	B_layer[inlyr] = tmp_B_layer_int[inlyr]*wgt_lw[inbands][inlyr];
+	    	tmp_tau[inlyr] = tau[inbands][inlyr];
+            }
+	}
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
 	for(int inlev=0; inlev<nlev; inlev++){
 	    Eup[inlev] += tmp_Eup[inlev];

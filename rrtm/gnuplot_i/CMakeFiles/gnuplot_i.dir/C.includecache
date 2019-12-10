@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/gnuplot_i/gnuplot_i.c
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/gnuplot_i/gnuplot_i.c
 gnuplot_i.h
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/gnuplot_i/gnuplot_i.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/gnuplot_i/gnuplot_i.h
 
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/gnuplot_i/gnuplot_i.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/gnuplot_i/gnuplot_i.h
 stdio.h
 -
 stdlib.h

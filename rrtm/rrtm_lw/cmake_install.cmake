@@ -1,8 +1,8 @@
-# Install script for directory: /home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw
+# Install script for directory: /home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_lw
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install")
+  set(CMAKE_INSTALL_PREFIX "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -38,10 +38,10 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw/libfpda_rrtm_lw.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_lw/libfpda_rrtm_lw.a")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/" TYPE DIRECTORY FILES "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw/./" FILES_MATCHING REGEX "/[^/]*\\.h$")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/" TYPE DIRECTORY FILES "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_lw/./" FILES_MATCHING REGEX "/[^/]*\\.h$")
 endif()
 

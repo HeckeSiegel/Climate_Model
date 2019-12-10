@@ -6,15 +6,15 @@
 
 #IncludeRegexTransform: 
 
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_sw/fpda_rrtm_sw.h
-stdlib.h
--
-
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/src/fpda_example_sw_BM.c
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/src/fpda_example_sw_BM.c
 stdio.h
 -
 math.h
 -
 fpda_rrtm_sw.h
-/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/src/fpda_rrtm_sw.h
+/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/src/fpda_rrtm_sw.h
+
+rrtm_sw/fpda_rrtm_sw.h
+stdlib.h
+-
 

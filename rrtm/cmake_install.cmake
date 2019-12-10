@@ -1,8 +1,8 @@
-# Install script for directory: /home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm
+# Install script for directory: /home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/install")
+  set(CMAKE_INSTALL_PREFIX "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -39,10 +39,10 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/gnuplot_i/cmake_install.cmake")
-  include("/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw/cmake_install.cmake")
-  include("/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_sw/cmake_install.cmake")
-  include("/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/src/cmake_install.cmake")
+  include("/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/gnuplot_i/cmake_install.cmake")
+  include("/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_lw/cmake_install.cmake")
+  include("/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_sw/cmake_install.cmake")
+  include("/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/src/cmake_install.cmake")
 
 endif()
 
@@ -54,5 +54,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/filer/z-sv-pool12c/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

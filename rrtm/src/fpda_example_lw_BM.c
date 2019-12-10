@@ -73,12 +73,13 @@ int main() {
         srf_emission = srf_emission + wgt_lw[ib][k] *B;
 
         printf("Band %4i Layer %4i weight %8e dtaumol %8e\n", ib, k, wgt_lw[ib][k], dtau_mol_lw[ib][k]);
+	printf("\n nbands = %2.1d , wvl1 = %6.8f , wvl2 = %6.8f \n", nbands, 1e-2/band_ubound[ib], 1e-2/band_lbound[ib]);
 
 	// 
       }
 
       printf("\n Nbands %i :: total surface emission %e :: stefan boltzmann %e \n",nbands,srf_emission * 3.1415, 5.67e-8*tlay[k]*tlay[k]*tlay[k]*tlay[k]);
 
-
+      
       return 0;
 }

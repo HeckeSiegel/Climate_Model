@@ -6,7 +6,7 @@ Fortran_FLAGS =  -cpp -ffree-line-length-none                                   
 
 Fortran_DEFINES = 
 
-Fortran_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/rrtm_lw" 
+Fortran_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/rrtm_lw" 
 
 # Custom flags: rrtm_lw/CMakeFiles/fpda_rrtm_lw.dir/rrtmg_lw_k_g.f90.o_FLAGS = -O0
 

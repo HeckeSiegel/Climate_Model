@@ -6,5 +6,5 @@ C_FLAGS =  -cpp --std=c99                                                       
 
 C_DEFINES = 
 
-C_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm_fpda_v1.04/rrtm/gnuplot_i" 
+C_INCLUDES = -I"/home/s/S.Legler/Documents/Advanced Atmospheric Physics/Climate_Model/rrtm/gnuplot_i" 
 
