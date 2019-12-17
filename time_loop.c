@@ -6,6 +6,7 @@
 #include "gnuplot_i.h"
 #include "ascii.h"
 #include "fpda_rrtm_lw.h"
+#include "fpda_rrtm_sw.h"
 
 #define RA 287.0
 #define CP 1005.0
@@ -140,20 +141,32 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 double kTimeLoop(int nlyr, int nlev){
     double t = 0.;
     double p0 = 1000.0; //hPa
-    double equi = 1e-5; //threshold for breaking the time loop
+    double equi = 1e-3; //threshold for breaking the time loop
 
     double p[nlev], plyr[nlyr];
     double T[nlyr], theta[nlyr], z[nlyr], deltaT[nlyr], Ttoa, dt;
     double Edown[nlev], Eup[nlev], deltaE[nlyr];
+    double deltaE_sw[nlyr];
     double h2ovmr[nlyr]   , o3vmr[nlyr]    , co2vmr[nlyr]   , ch4vmr[nlyr]   , n2ovmr[nlyr] , o2vmr[nlyr];
     double cfc11vmr[nlyr] , cfc12vmr[nlyr] , cfc22vmr[nlyr] , ccl4vmr[nlyr];
-
+    
+    //for longwave radiation
     int nbands;
     double * band_lbound;   // [nbands]    
     double * band_ubound;   // [nbands]    
     double **tau;   // [nbands][nlyr]       
     double **wgt_lw;        // [nbands][nlyr]       
     
+    // for shortwave radiation
+    int nbands_sw;
+    double *band_lbound_sw; // [nbands]    
+    double *band_ubound_sw; // [nbands]    
+
+    double **dtau_mol_sw;   // [nbands][nlay]       
+    double **dtau_ray_sw;   // [nbands][nlay]       
+    double *wgt_sw;         // [nbands]
+    double g0 = 0.;
+    double Ag = 0.33;
     //read in h2o and O3 concentrations
     int nrows = 0;
     double *tmp1 = NULL;
@@ -174,9 +187,7 @@ double kTimeLoop(int nlyr, int nlev){
     for(int inlyr=0; inlyr<nlyr; inlyr++) {
         T[inlyr] = 288. - (nlyr-inlyr-1)*50/(nlyr-1);
         h2ovmr[inlyr] = 1e-6*(h20[inlyr+1]+h20[inlyr])/2.;
-	printf("%6.9f \n", h2ovmr[inlyr]);
         o3vmr[inlyr] = 1e-6*(o3[inlyr+1]+o3[inlyr])/2.;
-	printf("%6.9f \n", o3vmr[inlyr]);
         co2vmr[inlyr] = 400e-6;
         ch4vmr[inlyr] = 10e-6;
         n2ovmr[inlyr] = 320e-9;
@@ -186,23 +197,27 @@ double kTimeLoop(int nlyr, int nlev){
         cfc22vmr[inlyr] = 0;
         ccl4vmr[inlyr] = 0;
     }
-    // Call C rrtm routine to get absorption coefficients
-    /*cfpda_rrtm_lw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
-		     cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
-		     &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);*/
     //time loop	
     while(1==1){
-	Ttoa = T[nlyr-1]; // to compare temperature between 2 time steps
-        //########################## call rrtm every 1000th time step ####################################################
+	Ttoa = T[0]; // to compare temperature between 2 time steps
+        //########################## call rrtm every time step ####################################################
 	cfpda_rrtm_lw (nlyr, p, T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
 		 cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
 		 &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
+	cfpda_rrtm_sw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
+		     &nbands_sw, &band_lbound_sw, &band_ubound_sw, &wgt_sw, &dtau_mol_sw, &dtau_ray_sw);
+	for (int inbands_sw=0; inbands_sw<nbands_sw; inbands_sw++) {
+		for(int inlyr=0; inlyr<nlyr; inlyr++) {
+			printf("%6.6f \n",dtau_mol_sw[inbands_sw][inlyr]); //get nan's here that's why the deltaE's are nan's too
+          		dtau_mol_sw[inbands_sw][inlyr] = dtau_mol_sw[inbands_sw][inlyr] + dtau_ray_sw[inbands_sw][inlyr];
+			dtau_ray_sw[inbands_sw][inlyr] = dtau_ray_sw[inbands_sw][inlyr] / dtau_mol_sw[inbands_sw][inlyr];
+        	}
+        }
 	//################################################################################################################
 
 	//###################################### use k atmosphere ########################################################
-	
         kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE);
-	
+	solar_rt (deltaE_sw, Ag, nlev, nlyr, dtau_mol_sw, g0, dtau_ray_sw, wgt_sw, band_lbound_sw, band_ubound_sw, nbands_sw);
         //################################################################################################################
 
 	//################ find dt #######################################################################################
@@ -234,7 +249,7 @@ double kTimeLoop(int nlyr, int nlev){
         for(int i=nlev-3; i>=0; i--){
 	    z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
         }
-	printf("T(surf) = %6.3f t(days) = %6.3f \n", T[nlyr-1], t/(60.*60.*24));
+	//printf("T(surf) = %6.3f t(days) = %6.3f \n", T[nlyr-1], t/(60.*60.*24));
 	
 	//################################### print into file to make plot ###############################################
 	/*char buffer[64]; // filename buffer
@@ -248,7 +263,7 @@ double kTimeLoop(int nlyr, int nlev){
         //################################################################################################################
 
 	//### if the change in toa temperature is small enough the system is in equilibrium ##############################
-	if(((Ttoa-T[nlyr-1]) < equi && (Ttoa-T[nlyr-1]) > 0) || ((Ttoa-T[nlyr-1]) > -equi && (Ttoa-T[nlyr-1]) < 0)){
+	if(((Ttoa-T[0]) < equi && (Ttoa-T[0]) > 0) || ((Ttoa-T[0]) > -equi && (Ttoa-T[0]) < 0)){
 	    break;
 	}
 	

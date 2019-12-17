@@ -1,8 +1,8 @@
 CC=gcc
 
-CFLAGS='-O3 -ffast-math -fstrict-aliasing -g -Wall -fsanitize=address'
+CFLAGS='-O3 -ffast-math -fstrict-aliasing -g -Wall' # -fsanitize=address
 
-DLFLAGS='-lm -lfpda_rrtm_lw'
+DLFLAGS='-lm -lfpda_rrtm_lw -lfpda_rrtm_sw'
 
 $CC -c $CFLAGS thermal_radiation.c
 

@@ -80,7 +80,7 @@ void dE(double *deltaE, double *Edown, double *Eup, int nlyr){
     for (int i = 0; i<nlyr-1; i++){
 	deltaE[i] = Edown[i] + Eup[i+1] - Eup[i] - Edown[i+1];
 	}
-    deltaE[nlyr-1] = Edown[nlyr-1] - Eup[nlyr-1] + Eearth;
+    deltaE[nlyr-1] = Edown[nlyr-1] - Eup[nlyr-1];
 }
 void oneBandAtmosphere(double *T, int nlev, int nlyr, double tau_total,double *Edown, double *Eup, double *deltaE){
     double tau[nlyr];
@@ -202,4 +202,113 @@ void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int 
         }
     }
     dE(deltaE,Edown,Eup,nlyr);
+}
+/* calculate layer properties t, r, rdir, sdir, and tdir from            */
+/* layer optical thickness dtau, asymmetry parameter g,                  */
+/* single scattering albedo omega0, and cosine of solar zenith angle mu0 */
+
+void eddington_v2 (double dtau, double g, double omega0, double mu0,
+		   double *t, double *r, double *rdir, double *sdir, double *tdir)
+{
+  double alpha1=0, alpha2=0, alpha3=0, alpha4=0, alpha5=0, alpha6=0;
+  double a11=0, a12=0, a13=0, a23=0, a33=0;
+  double lambda=0, b=0, A=0;
+  double denom=0;
+
+  /* first, avoid omega0=1 because of instability */
+  if (omega0 > 0.999999)
+    omega0=0.999999;
+  if (dtau>100.0){
+    dtau = 100.0;
+  }
+  alpha1= (1.0-omega0)+0.75*(1.0-omega0*g);
+  alpha2=-(1.0-omega0)+0.75*(1.0-omega0*g);
+  
+  lambda=sqrt(alpha1*alpha1-alpha2*alpha2);
+  
+  A=1.0/(alpha2/(alpha1-lambda)*exp(lambda*dtau)-alpha2/(alpha1+lambda)*exp(-lambda*dtau));
+  
+  a11=A*2.0*lambda/alpha2;
+  a12=A*(exp(lambda*dtau)-exp(-lambda*dtau));
+  
+  b=0.5-0.75*g*mu0;
+  alpha3=-omega0*b; 
+  alpha4=omega0*(1-b);
+  
+  denom = (1.0/mu0/mu0-lambda*lambda);
+  alpha5=((alpha1-1.0/mu0)*alpha3-alpha2*alpha4)/denom;
+  alpha6=(alpha2*alpha3-(alpha1+1.0/mu0)*alpha4)/denom;
+  
+  a33=exp(-dtau/mu0);
+  
+  a13=alpha5*(1.0-(a11)*(a33))-alpha6*(a12);
+  a23=-(a12)*alpha5*(a33)+alpha6*((a33)-(a11));
+
+  *t    = a11;
+  *r    = a12;
+  *tdir = a33;
+  *rdir = a13 / mu0;
+  *sdir = a23 / mu0;
+}
+void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, double g, double **omega0, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands){
+	double r[nlyr], t[nlyr], tdir[nlyr], rdir[nlyr], sdir[nlyr]; 
+	double R[nlyr], T[nlyr], Tdir[nlyr], Sdir[nlyr];
+	double Eet = 1361.6; // W/m^2
+	double mu = 0.25; // cos(60°)/2
+	double Edown[nlev], Eup[nlev], Edir[nlev], E_nsdown[nlev], E_nsup[nlev];
+	double Edown_total[nlev], Eup_total[nlev];
+
+	for (int inlev=0; inlev<nlev; inlev++){
+		Eup_total[inlev] = 0.;
+		Edown_total[inlev] = 0.;
+    	}
+	//calculate deltaE's for all wavelength bands
+	for (int inbands=0; inbands<nbands; inbands++){
+	for (int inlyr=0; inlyr<nlyr; inlyr++){
+		eddington_v2 (tau[inbands][inlyr],g,omega0[inbands][inlyr],mu,&(t[inlyr]),&(r[inlyr]),&(rdir[inlyr]),&(sdir[inlyr]),&(tdir[inlyr]));
+	}
+	// 1. R,Tdir,Sdir
+	R[0] = r[0];
+	T[0] = t[0];
+	Tdir[0] = tdir[0];
+	Sdir[0] =  (t[1]*sdir[0]+tdir[0]*rdir[1]*r[0]*t[1])/(1. - r[0]*r[1]);
+	for (int inlyr=1; inlyr<nlyr; inlyr++){
+		R[inlyr] = r[inlyr] + R[inlyr-1]*t[inlyr]*t[inlyr]/(1. - R[inlyr-1]*r[inlyr]);
+		T[inlyr] = T[inlyr-1]*t[inlyr]/(1. - R[inlyr-1]*r[inlyr]);
+		Tdir[inlyr] *= tdir[inlyr];
+		Sdir[inlyr] = Tdir[inlyr-1]*sdir[inlyr] + (t[inlyr]*Sdir[inlyr-1] + Tdir[inlyr-1]*rdir[inlyr]*R[inlyr-1]*t[inlyr])/(1. - R[inlyr-1]*r[inlyr]);
+	}
+	// 2. irradiance at surface
+	// irradiance without source term (ns = no source)
+	E_nsdown[0] = Eet*mu;
+	E_nsdown[nlev-1] = T[nlev-2]*E_nsdown[0]/(1. - R[nlev-2]*Ag);
+	E_nsup[nlev-1] = Ag*E_nsdown[nlev-1];
+	for (int inlev=nlev-2; inlev>0; inlev--){
+		E_nsdown[inlev] = (T[inlev-1]*E_nsdown[0] + R[inlev-1]*t[inlev-1]*E_nsup[inlev+1])/(1. - R[inlev-1]*r[inlev]);
+		E_nsup[inlev] = (t[inlev]*E_nsup[inlev+1] + T[inlev-1]*r[inlev]*E_nsdown[0])/(1. - R[inlev-1]*r[inlev]);
+	} 
+	E_nsup[0] = t[0]*E_nsup[1] + r[0]*E_nsdown[0];
+	// direct irradiance
+	Edir[0] = Eet*mu*wgt_sw[inbands];
+	for (int inlev=1; inlev<nlev; inlev++){
+		Edir[inlev] = Edir[inlev-1]*tdir[inlev-1];
+	}
+	// total irradiance at surface
+	Edown[nlev-1] = (Sdir[nlev-1] + Tdir[nlev-2]*R[nlev-2]*Ag)*Edir[0]/(1. - R[nlev-2]*Ag);
+	Eup[nlev-1] = Ag*(Edown[nlev-1] + Tdir[nlev-2]*Edir[0]);
+	
+	// 3. irradiances at all other levels
+	for (int inlev=nlev-2; inlev>0; inlev--){
+		Edown[inlev] = E_nsdown[inlev] + (Edir[0]*Sdir[inlev] + Edir[inlev]*rdir[inlev]*R[inlev-1])/(1. - R[inlev-1]*r[inlev]);
+		Eup[inlev] = E_nsup[inlev] + (Edir[0]*Sdir[inlev]*rdir[inlev] + Edir[inlev]*rdir[inlev])/(1. - R[inlev-1]*r[inlev]);
+	}
+	Edown[0] = 0.;
+	Eup[0] = t[0]*Eup[1] + rdir[0]*Edir[0];
+	for (int inlev=0; inlev<nlev; inlev++){
+		Eup_total[inlev] += Eup[inlev];
+		Edown_total[inlev] += Edown[inlev];
+    	}
+	}
+	
+	dE(deltaE,Edown_total,Eup_total,nlyr);
 }
