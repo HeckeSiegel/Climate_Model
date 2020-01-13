@@ -20,7 +20,7 @@ double B_int(double lambda_1, double lambda_2, double T){
 	return B(lambda_1+(lambda_2-lambda_1)/2.,T)*(lambda_2-lambda_1);
     }
     else{
-    	int N = (int)ceil((lambda_2-lambda_1))/1e-6;
+    	int N = (int)((lambda_2-lambda_1)/1e-6);
 	double dwvl;
 	if(N>50){
 		N = 50;
@@ -163,7 +163,7 @@ void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int 
 	Eup[inlev] = 0.;
 	Edown[inlev] = 0.;
     }
-
+    //calculate all Eups, Edowns for first band
     tmp_B_surface_int = B_int(1e-2/band_ubound[0],1e-2/band_lbound[0],T[nlyr-1]);
     B_surface = tmp_B_surface_int*wgt_lw[0][nlyr-1]; 
     for (int inlyr = 0; inlyr< nlyr; inlyr++){
@@ -176,14 +176,14 @@ void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int 
 	Eup[inlev] += tmp_Eup[inlev];
 	Edown[inlev] += tmp_Edown[inlev];
     }
-
+    //now for all other bands
     for (int inbands=1; inbands<nbands; inbands++){
 	if(band_ubound[inbands-1]==band_ubound[inbands] && band_lbound[inbands-1]==band_lbound[inbands])
 	{
 	    B_surface = tmp_B_surface_int*wgt_lw[inbands][nlyr-1];
 	    for (int inlyr = 0; inlyr< nlyr; inlyr++){
-            B_layer[inlyr] = tmp_B_layer_int[inlyr]*wgt_lw[inbands][inlyr];
-	    tmp_tau[inlyr] = tau[inbands][inlyr];
+                B_layer[inlyr] = tmp_B_layer_int[inlyr]*wgt_lw[inbands][inlyr];
+	        tmp_tau[inlyr] = tau[inbands][inlyr];
             }
 	}
 	else{
@@ -196,6 +196,11 @@ void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int 
             }
 	}
     	schwarzschild(nlev,tmp_tau,B_layer,B_surface,tmp_Edown,tmp_Eup);
+	/*if(inbands == 21) {
+	    for(int inlyr=0; inlyr<nlyr; inlyr++){
+		printf("Edown_therm: %6.3f tau: %6.3f \n",tmp_Edown[inlyr], tmp_tau[inlyr]);
+	    }
+	}*/
 	for(int inlev=0; inlev<nlev; inlev++){
 	    Eup[inlev] += tmp_Eup[inlev];
 	    Edown[inlev] += tmp_Edown[inlev];
@@ -253,9 +258,8 @@ void eddington_v2 (double dtau, double g, double omega0, double mu0,
 void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, double g, double **omega0, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands){
 	double r[nlyr], t[nlyr], tdir[nlyr], rdir[nlyr], sdir[nlyr]; 
 	double R[nlyr], T[nlyr], Tdir[nlyr], Sdir[nlyr];
-	double Eet = 1361.6; // W/m^2
-	double mu = 0.25; // cos(60°)/2
-	double Edown[nlev], Eup[nlev], Edir[nlev], E_nsdown[nlev], E_nsup[nlev];
+	double mu = 0.5; // 
+	double Edown[nlev], Eup[nlev], Edir[nlev];
 	double Edown_total[nlev], Eup_total[nlev];
 
 	for (int inlev=0; inlev<nlev; inlev++){
@@ -271,44 +275,45 @@ void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, doub
 	R[0] = r[0];
 	T[0] = t[0];
 	Tdir[0] = tdir[0];
-	Sdir[0] =  (t[1]*sdir[0]+tdir[0]*rdir[1]*r[0]*t[1])/(1. - r[0]*r[1]);
+	Sdir[0] =  sdir[0];
 	for (int inlyr=1; inlyr<nlyr; inlyr++){
-		R[inlyr] = r[inlyr] + R[inlyr-1]*t[inlyr]*t[inlyr]/(1. - R[inlyr-1]*r[inlyr]);
-		T[inlyr] = T[inlyr-1]*t[inlyr]/(1. - R[inlyr-1]*r[inlyr]);
-		Tdir[inlyr] *= tdir[inlyr];
-		Sdir[inlyr] = Tdir[inlyr-1]*sdir[inlyr] + (t[inlyr]*Sdir[inlyr-1] + Tdir[inlyr-1]*rdir[inlyr]*R[inlyr-1]*t[inlyr])/(1. - R[inlyr-1]*r[inlyr]);
+		R[inlyr] = (r[inlyr] + (R[inlyr-1]*t[inlyr]*t[inlyr])/(1.0 - R[inlyr-1]*r[inlyr]));
+		T[inlyr] = T[inlyr-1]*t[inlyr]/(1.0 - R[inlyr-1]*r[inlyr]);
+		Tdir[inlyr] = Tdir[inlyr-1]*tdir[inlyr];
+		Sdir[inlyr] = Tdir[inlyr-1]*sdir[inlyr] + (t[inlyr]*Sdir[inlyr-1] + Tdir[inlyr-1]*rdir[inlyr]*R[inlyr-1]*t[inlyr])/(1.0 - R[inlyr-1]*r[inlyr]);
+		/*if(R[inlyr]<0){R[inlyr]=0.;}
+		if(T[inlyr]<0){T[inlyr]=0.;}
+		if(Tdir[inlyr]<0){Tdir[inlyr]=0.;}
+		if(Sdir[inlyr]<0){Sdir[inlyr]=0.;}*/
 	}
-	// 2. irradiance at surface
-	// irradiance without source term (ns = no source)
-	E_nsdown[0] = Eet*mu;
-	E_nsdown[nlev-1] = T[nlev-2]*E_nsdown[0]/(1. - R[nlev-2]*Ag);
-	E_nsup[nlev-1] = Ag*E_nsdown[nlev-1];
-	for (int inlev=nlev-2; inlev>0; inlev--){
-		E_nsdown[inlev] = (T[inlev-1]*E_nsdown[0] + R[inlev-1]*t[inlev-1]*E_nsup[inlev+1])/(1. - R[inlev-1]*r[inlev]);
-		E_nsup[inlev] = (t[inlev]*E_nsup[inlev+1] + T[inlev-1]*r[inlev]*E_nsdown[0])/(1. - R[inlev-1]*r[inlev]);
-	} 
-	E_nsup[0] = t[0]*E_nsup[1] + r[0]*E_nsdown[0];
-	// direct irradiance
-	Edir[0] = Eet*mu*wgt_sw[inbands];
+	// 2. transmission of direct solar radiation
+	Edir[0] = wgt_sw[inbands]*mu*0.5;
 	for (int inlev=1; inlev<nlev; inlev++){
 		Edir[inlev] = Edir[inlev-1]*tdir[inlev-1];
 	}
-	// total irradiance at surface
-	Edown[nlev-1] = (Sdir[nlev-1] + Tdir[nlev-2]*R[nlev-2]*Ag)*Edir[0]/(1. - R[nlev-2]*Ag);
+	// 3. irradiances at surface and toa
+	Edown[nlev-1] = Edir[0]*(Sdir[nlev-2] + Tdir[nlev-2]*R[nlev-2]*Ag)/(1.0 - R[nlev-2]*Ag);
 	Eup[nlev-1] = Ag*(Edown[nlev-1] + Tdir[nlev-2]*Edir[0]);
 	
-	// 3. irradiances at all other levels
+	// 4. irradiances of all other levels
 	for (int inlev=nlev-2; inlev>0; inlev--){
-		Edown[inlev] = E_nsdown[inlev] + (Edir[0]*Sdir[inlev] + Edir[inlev]*rdir[inlev]*R[inlev-1])/(1. - R[inlev-1]*r[inlev]);
-		Eup[inlev] = E_nsup[inlev] + (Edir[0]*Sdir[inlev]*rdir[inlev] + Edir[inlev]*rdir[inlev])/(1. - R[inlev-1]*r[inlev]);
+		Edown[inlev] = (R[inlev-1]*t[inlev]*Eup[inlev+1])/(1.0 - R[inlev-1]*r[inlev]) + (Edir[0]*Sdir[inlev-1] + Edir[inlev]*rdir[inlev]*R[inlev-1])/(1.0 - R[inlev-1]*r[inlev]);
+		Eup[inlev] = (t[inlev]*Eup[inlev+1])/(1.0 - R[inlev-1]*r[inlev]) + (Edir[0]*Sdir[inlev-1]*rdir[inlev] + Edir[inlev]*rdir[inlev])/(1.0 - R[inlev-1]*r[inlev]);
 	}
-	Edown[0] = 0.;
+	Edown[0] = 0;
 	Eup[0] = t[0]*Eup[1] + rdir[0]*Edir[0];
+	
+	// 5. sum up irradiances for each wavelength band
 	for (int inlev=0; inlev<nlev; inlev++){
 		Eup_total[inlev] += Eup[inlev];
-		Edown_total[inlev] += Edown[inlev];
+		Edown_total[inlev] += (Edown[inlev]+Edir[inlev]);
     	}
 	}
-	
+	for (int inlev=0; inlev<nlev; inlev++){
+		printf("Eup: %6.3f , Edown: %6.3f \n",Eup_total[inlev],Edown_total[inlev]);
+	}
 	dE(deltaE,Edown_total,Eup_total,nlyr);
+	for (int inlev=0; inlev<nlyr; inlev++){
+		printf("dE: %6.3f \n",deltaE[inlev]);
+	}
 }

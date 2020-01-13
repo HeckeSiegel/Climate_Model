@@ -1,0 +1,5 @@
+i=0
+for fi in grey_animation_*.png; do
+    mv "$fi" grey_animation_$i.png
+    i=$((i+1))
+done

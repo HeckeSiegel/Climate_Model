@@ -51,7 +51,7 @@ void convection(double *theta, int size){
 double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwvl, double tau_total, double *Edown, double *Eup, double *wvl, double **tau){
     double t = 0.;
     double p0 = 1000.0; //hPa
-    double equi = 1e-5; //threshold for breaking the time loop
+    double equi = 1e-6; //threshold for breaking the time loop
 
     double p[nlev],plyr[nlyr];
     double Tnlev[nlev],deltaT[nlyr],dt,Ttoa;
@@ -75,16 +75,16 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
         plyr[inlev]=(p[inlev] + p[inlev+1]) / 2.0;
     }
     //time loop
-    while(1==1){
+    while((t/(24*60*60)) < 260){
 	Ttoa = T[nlyr-1]; // to compare temperature between 2 time steps
 
 	//###################################### choose which kind of atmosphere to simulate #############################
         // gray atmosphere
         //oneBandAtmosphere(T,nlev,nlyr,tau_total,Edown,Eup,deltaE);
         //window atmosphere
-	threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
+	//threeBandAtmosphere(nwvl,nlyr,nlev,T,tau_total,Edown,Eup,deltaE);
         // line by line atmosphere
-        //multiBandAtmosphere(wvl,nwvl,nlyr,nlev,T,tau,Edown,Eup,deltaE);
+        multiBandAtmosphere(wvl,nwvl,nlyr,nlev,T,tau,Edown,Eup,deltaE);
         //################################################################################################################
 
 	//################ find dt #######################################################################################
@@ -100,7 +100,7 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
 		T[inlyr] += E2T(deltaE[inlyr],dp)*dt;
 	}
-
+	T[nlyr-1] += E2T(Eearth,dp)*dt;
 	//################# convection ##################################################################################
     	for (int inlyr = 0; inlyr < nlyr; inlyr++){
 	    theta[inlyr] = T2theta(T[inlyr], plyr[inlyr]);
@@ -120,19 +120,18 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 	
 	//################################### print into file to make plot ###############################################
 	/*char buffer[64]; // filename buffer
-	snprintf(buffer, sizeof(char) * 64, "./plot/3band_animation/ascii/grey_animation_%i.asc", k);
-	file = fopen(buffer, "wb");
-	for (int i=0; i < nlyr; i++){
-            fprintf(file,"%6.3f %6.3f\n",z[i]*1e-3,T[i]);
-        }
-	fclose(file );
-	k++;*/
+	snprintf(buffer, sizeof(char) * 64, "./plot/3band_animation/ascii/grey_animation_%i.asc", k);*/
+	//file = fopen("./plot/animation/....asc", "wb");
+	//file = fopen("./plot/lbl_zero_all_new.asc", "ab");
+        //fprintf(file,"%6.6f %6.6f\n",T[nlyr-1],t/(24*60*60));
+	//fclose(file );
+	//k++;
         //################################################################################################################
 
 	//### if the change in toa temperature is small enough the system is in equilibrium ##############################
-	if(((Ttoa-T[nlyr-1]) < equi && (Ttoa-T[nlyr-1]) > 0) || ((Ttoa-T[nlyr-1]) > -equi && (Ttoa-T[nlyr-1]) < 0)){
+	/*if(((Ttoa-T[nlyr-1]) < equi && (Ttoa-T[nlyr-1]) > 0) || ((Ttoa-T[nlyr-1]) > -equi && (Ttoa-T[nlyr-1]) < 0)){
 	    break;
-	}
+	}*/
 	
     }
     return t;
@@ -141,7 +140,9 @@ double timeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int nwv
 double kTimeLoop(int nlyr, int nlev){
     double t = 0.;
     double p0 = 1000.0; //hPa
-    double equi = 1e-3; //threshold for breaking the time loop
+    double equi = 1e-5; //threshold for breaking the time loop
+	
+    //FILE *file;
 
     double p[nlev], plyr[nlyr];
     double T[nlyr], theta[nlyr], z[nlyr], deltaT[nlyr], Ttoa, dt;
@@ -166,7 +167,7 @@ double kTimeLoop(int nlyr, int nlev){
     double **dtau_ray_sw;   // [nbands][nlay]       
     double *wgt_sw;         // [nbands]
     double g0 = 0.;
-    double Ag = 0.33;
+    double Ag = 0.3;
     //read in h2o and O3 concentrations
     int nrows = 0;
     double *tmp1 = NULL;
@@ -189,7 +190,7 @@ double kTimeLoop(int nlyr, int nlev){
         h2ovmr[inlyr] = 1e-6*(h20[inlyr+1]+h20[inlyr])/2.;
         o3vmr[inlyr] = 1e-6*(o3[inlyr+1]+o3[inlyr])/2.;
         co2vmr[inlyr] = 400e-6;
-        ch4vmr[inlyr] = 10e-6;
+        ch4vmr[inlyr] = 1.8e-6;
         n2ovmr[inlyr] = 320e-9;
         o2vmr[inlyr] = .209;
         cfc11vmr[inlyr] = 0;
@@ -206,23 +207,34 @@ double kTimeLoop(int nlyr, int nlev){
 		 &nbands, &band_lbound,&band_ubound, &wgt_lw, &tau);
 	cfpda_rrtm_sw (nlyr,p,T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
 		     &nbands_sw, &band_lbound_sw, &band_ubound_sw, &wgt_sw, &dtau_mol_sw, &dtau_ray_sw);
+	//file = fopen("kdistribution.asc", "ab");
+	/*fprintf(file,"T \n");
+	for(int inlyr=0; inlyr<nlyr; inlyr++){
+		fprintf(file,"%f  ",T[inlyr]);
+	}
+	fprintf(file,"\n");
+	fprintf(file,"tau \n");*/
 	for (int inbands_sw=0; inbands_sw<nbands_sw; inbands_sw++) {
 		for(int inlyr=0; inlyr<nlyr; inlyr++) {
-			printf("%6.6f \n",dtau_mol_sw[inbands_sw][inlyr]); //get nan's here that's why the deltaE's are nan's too
           		dtau_mol_sw[inbands_sw][inlyr] = dtau_mol_sw[inbands_sw][inlyr] + dtau_ray_sw[inbands_sw][inlyr];
 			dtau_ray_sw[inbands_sw][inlyr] = dtau_ray_sw[inbands_sw][inlyr] / dtau_mol_sw[inbands_sw][inlyr];
         	}
         }
+	/*printf("tau_therm[21][0] = %6.6f , tau_therm[21][0] = %6.6f \n", tau[21][0],tau[21][nlyr-1]);
+	printf("tau_mol[0] = %6.6f , tau_ray[0] = %6.6f \n", dtau_mol_sw[0][0],dtau_ray_sw[0][0]);
+	printf("tau_mol[surf] = %6.6f , tau_ray[surf] = %6.6f \n", dtau_mol_sw[0][nlyr-1],dtau_ray_sw[0][nlyr-1]);*/
 	//################################################################################################################
 
 	//###################################### use k atmosphere ########################################################
         kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE);
 	solar_rt (deltaE_sw, Ag, nlev, nlyr, dtau_mol_sw, g0, dtau_ray_sw, wgt_sw, band_lbound_sw, band_ubound_sw, nbands_sw);
         //################################################################################################################
-
+	/*for (int inlyr=0; inlyr<nlyr; inlyr++){
+		printf("deltaE_therm: %6.3f , deltaE_solar: %6.3f \n",deltaE[inlyr], deltaE_sw[inlyr]);
+	}*/
 	//################ find dt #######################################################################################
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		deltaT[inlyr] = E2T(deltaE[inlyr],dp);
+		deltaT[inlyr] = E2T(deltaE[inlyr]+deltaE_sw[inlyr],dp);
 		if(deltaT[inlyr]<0.){deltaT[inlyr] = -deltaT[inlyr];}
 	}
 	convection(deltaT,nlyr);
@@ -231,7 +243,7 @@ double kTimeLoop(int nlyr, int nlev){
 
 	//################ new T with calculated dt #####################################################################
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		T[inlyr] += E2T(deltaE[inlyr],dp)*dt;
+		T[inlyr] += E2T(deltaE[inlyr]+deltaE_sw[inlyr],dp)*dt;
 	}
 
 	//################# convection ##################################################################################
@@ -249,8 +261,9 @@ double kTimeLoop(int nlyr, int nlev){
         for(int i=nlev-3; i>=0; i--){
 	    z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
         }
-	//printf("T(surf) = %6.3f t(days) = %6.3f \n", T[nlyr-1], t/(60.*60.*24));
-	
+	printf("T(surf) = %6.3f  t(days) = %6.3f \n", T[nlyr-1], t/(60.*60.*24));
+	printf("\n");
+	//sleep(1);
 	//################################### print into file to make plot ###############################################
 	/*char buffer[64]; // filename buffer
 	snprintf(buffer, sizeof(char) * 64, "./plot/3band_animation/ascii/grey_animation_%i.asc", k);
@@ -284,7 +297,6 @@ double plotTimeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int
     double Tnlev[nlev],deltaT[nlyr],dt,Tsurf;
     double deltaE[nlyr];
     
-    int tcounter=0;
     gnuplot_ctrl *g1;
     g1 = gnuplot_init();
 
@@ -339,20 +351,8 @@ double plotTimeLoop(double *T, double *theta, double *z, int nlyr, int nlev, int
 		z[i] = z[i+1] + dp2dz(plyr[i+1]-plyr[i],plyr[i],T[i]);
     	}
 	
-	/* number of time steps */
-        tcounter++;
-	if (tcounter%10 == 0) {
-      
-      		gnuplot_resetplot  (g1);  /* start with new plot rather than plotting into exisiting one */
-      		gnuplot_setstyle   (g1, "linespoints");     /* draw lines and points */
-      		gnuplot_set_xlabel (g1, "temperature [K]"); /* xaxis label */
-      		gnuplot_set_ylabel (g1, "altitude [m]");    /* yaxis label */
-      
-      		/* plot temperature T as function of z and label with temperature */
-      		gnuplot_plot_xy   (g1, T, z, nlyr, "Temperature") ;
-		sleep(1);
-    	 }
 	t += dt;
+
 	printf("T(surface) = %6.6f , z(surface in km) = %6.6f\n", T[nlyr-1],z[nlyr-1]*1e-3);
 	//if the change in surface temperature is small enough the system is in equilibrium
 	if(((Tsurf-T[0]) < equi && (Tsurf-T[0]) > 0) || ((Tsurf-T[0]) > -equi && (Tsurf-T[0]) < 0)){
@@ -390,9 +390,8 @@ int main()
     /*int nlyr = 30;
     int nlev = nlyr + 1;
     int nwvl = 3;
-    double tau_total = 1.8;
     double z[nlev];
-    double T[nlyr],theta[nlyr],t;
+    double T[nlyr],theta[nlyr];
     double Eup[nlev],Edown[nlev];*/
     //####################################################################################################################
   
@@ -403,17 +402,27 @@ int main()
     //####################################################################################################################
    
     //################################## for line by line atmosphere #####################################################
-    /*int nwvlco2 = 0;
-    int nwvlh2o = 0;
+    /*double t;
+    int nwvlco2 = 0;
+    int tmp1 = 0;
     int nyco2 = 0;
-    int nyh2o = 0;
+    int tmp2 = 0;
+    double tau_total = 1.9;
+
     double *wvnco2 = NULL; 
     double **tauco2 = NULL; 
-    double *wvnh2o = NULL; 
+
+    double *tmp3 = NULL; 
     double **tauh2o = NULL;
+    double **tauch4 = NULL;
+    double **taun2o = NULL;
+    double **tauo3 = NULL;
    
     ASCII_file2xy2D ("lbl.arts/lbl.co2.asc", &nwvlco2, &nyco2, &wvnco2, &tauco2);
-    ASCII_file2xy2D ("lbl.arts/lbl.h2o.asc", &nwvlh2o, &nyh2o, &wvnh2o, &tauh2o);
+    ASCII_file2xy2D ("lbl.arts/lbl.h2o.asc", &tmp1, &tmp2, &tmp3, &tauh2o);
+    ASCII_file2xy2D ("lbl.arts/lbl.ch4.asc", &tmp1, &tmp2, &tmp3, &tauch4);
+    ASCII_file2xy2D ("lbl.arts/lbl.n2o.asc", &tmp1, &tmp2, &tmp3, &taun2o);
+    ASCII_file2xy2D ("lbl.arts/lbl.o3.asc", &tmp1, &tmp2, &tmp3, &tauo3);
    
     int nlyrlbl = nyco2;
     int nlevlbl = nlyrlbl + 1;
@@ -423,7 +432,7 @@ int main()
     //add up tau's from h2o and co2
     for (int inwvl = 0; inwvl<nwvlco2; inwvl++){
 	for (int inlyr = 0; inlyr<nlyrlbl; inlyr++){
-		tauco2[inwvl][inlyr] = 0.*tauco2[inwvl][inlyr] + tauh2o[inwvl][inlyr];
+		tauco2[inwvl][inlyr] = tauco2[inwvl][inlyr] + tauh2o[inwvl][inlyr] + tauch4[inwvl][inlyr] + taun2o[inwvl][inlyr] + tauo3[inwvl][inlyr];
 	}
     }*/
     //###################################################################################################################
@@ -445,12 +454,12 @@ int main()
     
     //################################### print the output into a file ##################################################
     /*FILE *fp;
-    fp = fopen("test_lbl.txt", "w+");
-    fprintf(fp, "after %6.2f years\n",t/(365.*24*60*60)); //time until equilibrium
-    fprintf(fp,"Eup[TOA] = %6.3f\n",Eup[0]);             //Eup at top of atmosphere, should be Eearth when equilibrium is reached
-    fprintf(fp,"z[km], T[K]:\n");                        //height and temperature profile
+    fp = fopen("profile_lbl.txt", "ab");
+    //fprintf(fp, "after %6.2f years\n",t/(365.*24*60*60)); //time until equilibrium
+    //fprintf(fp,"Eup[TOA] = %6.3f\n",Eup[0]);             //Eup at top of atmosphere, should be Eearth when equilibrium is reached
+    //fprintf(fp,"z[km], T[K]:\n");                        //height and temperature profile
     for (int i=0; i < nlyr; i++){
-        fprintf(fp,"%6.3f %6.3f %6.3f\n",z[i]*1e-3,T[i],theta[i]);
+        fprintf(fp,"%6.3f %6.3f \n",zlbl[i]*1e-3,Tlbl[i]);
     }
     fclose(fp);*/
     //###################################################################################################################
