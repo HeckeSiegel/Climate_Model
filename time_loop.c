@@ -31,6 +31,18 @@ double dp2dz(double dp, double p, double T){
 double boltzmann(double T){
     return sigma*pow(T,4);
 }
+double magnus(double T){
+    return 6.112*exp(17.62*(T-273.15)/(243.12+T-273.15));
+}
+double deltaw(double w0, double g0){
+    return (1-g0*g0)*w0/(1-w0*g0*g0);
+}
+double deltag(double g0){
+    return g0/(1+g0*g0);
+}
+double deltatau(double tau, double w0, double g0){
+    return tau*(1-w0*g0*g0);
+}
 void convection(double *theta, int size){
     while(1==1){
         int stable = 1;
@@ -146,8 +158,8 @@ double kTimeLoop(int nlyr, int nlev){
 
     double p[nlev], plyr[nlyr];
     double T[nlyr], theta[nlyr], z[nlyr], deltaT[nlyr], Ttoa, dt;
-    double Edown[nlev], Eup[nlev], deltaE[nlyr];
-    double deltaE_sw[nlyr];
+    double Edown[nlev], Eup[nlev], deltaE_clear[nlyr], deltaE_cloud[nlyr];
+    double deltaE_sw_clear[nlyr],deltaE_sw_cloud[nlyr];
     double h2ovmr[nlyr]   , o3vmr[nlyr]    , co2vmr[nlyr]   , ch4vmr[nlyr]   , n2ovmr[nlyr] , o2vmr[nlyr];
     double cfc11vmr[nlyr] , cfc12vmr[nlyr] , cfc22vmr[nlyr] , ccl4vmr[nlyr];
     
@@ -168,6 +180,7 @@ double kTimeLoop(int nlyr, int nlev){
     double *wgt_sw;         // [nbands]
     double g0 = 0.;
     double Ag = 0.3;
+    
     //read in h2o and O3 concentrations
     int nrows = 0;
     double *tmp1 = NULL;
@@ -175,19 +188,84 @@ double kTimeLoop(int nlyr, int nlev){
     double *tmp3 = NULL;  
     double *h20 = NULL;
     double *o3 = NULL;
+    double rel_F[nlev];
+    double rel_Flyr[nlyr];
     read_5c_file ("fpda.atm", &tmp1, &tmp2, &tmp3, &h20, &o3, &nrows);
+
+    //clouds
+    double cf = 0.5;
+    double *tmp4 = NULL;
+    double *tmp5 = NULL; 
+    double *tmp6 = NULL;  
+    double *tmp7 = NULL;
+    double *tmp8 = NULL; 
+    double *tmp9 = NULL;  
+    double *w0_lw = NULL;
+    double *g_lw = NULL;
+    
+    double *w0_cloud = NULL;
+    double *g_cloud = NULL;
+    int sw_bands = 0;
+    int lw_bands = 0;
+    read_5c_file ("rrtm/cldprp/rrtm.sw.int", &tmp4, &tmp5, &tmp6, &w0_cloud, &g_cloud, &sw_bands);
+    read_5c_file ("rrtm/cldprp/rrtm.sw.int", &tmp7, &tmp8, &tmp9, &w0_lw, &g_lw, &lw_bands);
+
+    //vertical expansion of cloud
+    double tau_ext[sw_bands][nlyr];
+    double tau_ext_lw[lw_bands][nlyr];
+    double tau_lw[lw_bands][nlyr];
+    int cloud_l = 1;
+    int cloud_u = 1;
+    double tau_ext0 = 20.;
+    // tau delta scaling for solar
+    for(int insw_bands=0; insw_bands<sw_bands; insw_bands++){
+        for(int i=0; i<cloud_l; i++){
+	    tau_ext[insw_bands][i] = 0.;
+        }
+        for(int i=cloud_l; i<=cloud_u; i++){
+	    tau_ext[insw_bands][i] = deltatau(tau_ext0,w0_cloud[insw_bands],g_cloud[insw_bands]);
+        }
+        for(int i=cloud_u+1; i<nlyr; i++){
+	    tau_ext[insw_bands][i] = 0.;
+        }
+    }
+    // tau delta sclaing for thermal
+    for(int inlw_bands=0; inlw_bands<lw_bands; inlw_bands++){
+        for(int i=0; i<cloud_l; i++){
+	    tau_ext_lw[inlw_bands][i] = 0.;
+        }
+        for(int i=cloud_l; i<=cloud_u; i++){
+	    tau_ext_lw[inlw_bands][i] = deltatau(tau_ext0,w0_lw[inlw_bands],g_lw[inlw_bands]);
+        }
+        for(int i=cloud_u+1; i<nlyr; i++){
+	    tau_ext_lw[inlw_bands][i] = 0.;
+        }
+    }
+    for(int isw_bands=0; isw_bands>sw_bands; isw_bands++){
+	w0_cloud[isw_bands] = deltaw(w0_cloud[isw_bands],g_cloud[isw_bands]);
+	g_cloud[isw_bands] = deltag(g_cloud[isw_bands]);
+    }
+    double g_clear[sw_bands][nlyr];
+    double tau_clear[sw_bands][nlyr];
+    double w0_clear[sw_bands][nlyr];
+
+    double g_cloudtot[sw_bands][nlyr];
+    double tau_cloud[sw_bands][nlyr];
+    double w0_cloudtot[sw_bands][nlyr];
+    
+
     //pressure profile
     for (int inlev = 0; inlev < nlev; inlev++) {
         p[inlev] = p0 * (double) inlev / (double) nlyr;
+	rel_F[inlev] = h20[inlev]*1e-6*p[inlev]/magnus(tmp3[inlev]);
     }
     for (int inlyr=0; inlyr < nlyr; inlyr++) {
         plyr[inlyr]=(p[inlyr] + p[inlyr+1]) / 2.0;
     }
     double dp = p[1]-p[0];
-    // temperatures and trace gas concentrations
     for(int inlyr=0; inlyr<nlyr; inlyr++) {
         T[inlyr] = 288. - (nlyr-inlyr-1)*50/(nlyr-1);
-        h2ovmr[inlyr] = 1e-6*(h20[inlyr+1]+h20[inlyr])/2.;
+	rel_Flyr[inlyr] = (rel_F[inlyr+1] + rel_F[inlyr])/2.;
         o3vmr[inlyr] = 1e-6*(o3[inlyr+1]+o3[inlyr])/2.;
         co2vmr[inlyr] = 400e-6;
         ch4vmr[inlyr] = 1.8e-6;
@@ -198,9 +276,13 @@ double kTimeLoop(int nlyr, int nlev){
         cfc22vmr[inlyr] = 0;
         ccl4vmr[inlyr] = 0;
     }
+    
     //time loop	
     while(1==1){
 	Ttoa = T[0]; // to compare temperature between 2 time steps
+        for (int inlyr=0; inlyr < nlyr; inlyr++) {
+                h2ovmr[inlyr] = 1e-6*rel_Flyr[inlyr]*magnus(T[inlyr])*pow(10,6)/plyr[inlyr];
+        }
         //########################## call rrtm every time step ####################################################
 	cfpda_rrtm_lw (nlyr, p, T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
 		 cfc11vmr,cfc12vmr,cfc22vmr,ccl4vmr,
@@ -214,27 +296,38 @@ double kTimeLoop(int nlyr, int nlev){
 	}
 	fprintf(file,"\n");
 	fprintf(file,"tau \n");*/
+	//##################################### cloudless sky ###########################################################
 	for (int inbands_sw=0; inbands_sw<nbands_sw; inbands_sw++) {
 		for(int inlyr=0; inlyr<nlyr; inlyr++) {
-          		dtau_mol_sw[inbands_sw][inlyr] = dtau_mol_sw[inbands_sw][inlyr] + dtau_ray_sw[inbands_sw][inlyr];
-			dtau_ray_sw[inbands_sw][inlyr] = dtau_ray_sw[inbands_sw][inlyr] / dtau_mol_sw[inbands_sw][inlyr];
+			g_clear[inbands_sw][inlyr] = 0.;
+          		tau_clear[inbands_sw][inlyr] = dtau_mol_sw[inbands_sw][inlyr] + dtau_ray_sw[inbands_sw][inlyr];
+			w0_clear[inbands_sw][inlyr] = dtau_ray_sw[inbands_sw][inlyr] / tau_clear[inbands_sw][inlyr];
         	}
         }
-	/*printf("tau_therm[21][0] = %6.6f , tau_therm[21][0] = %6.6f \n", tau[21][0],tau[21][nlyr-1]);
-	printf("tau_mol[0] = %6.6f , tau_ray[0] = %6.6f \n", dtau_mol_sw[0][0],dtau_ray_sw[0][0]);
-	printf("tau_mol[surf] = %6.6f , tau_ray[surf] = %6.6f \n", dtau_mol_sw[0][nlyr-1],dtau_ray_sw[0][nlyr-1]);*/
+        kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE_clear);
+	solar_rt (deltaE_sw_clear, Ag, nlev, nlyr, wgt_sw, band_lbound_sw, band_ubound_sw, nbands_sw,g_clear,tau_clear,w0_clear);
+        //################################################################################################################
+	
+	//################################### sky with clouds ############################################################
+	for (int inbands=0; inbands<nbands; inbands++){
+		for (int inlyr=0; inlyr<nlyr; inlyr++){
+			tau[inbands][inlyr] = tau[inbands][inlyr]+tau_ext_lw[inbands][inlyr];
+		}
+	}
+	for (int inbands_sw=0; inbands_sw<nbands_sw; inbands_sw++) {
+		for(int inlyr=0; inlyr<nlyr; inlyr++) {
+			g_cloudtot[inbands_sw][inlyr] = w0_cloud[inbands_sw]*tau_ext[inbands_sw][inlyr]*g_cloud[inbands_sw]/(w0_cloud[inbands_sw]*tau_ext[inbands_sw][inlyr]+dtau_ray_sw[inbands_sw][inlyr]);
+          		tau_cloud[inbands_sw][inlyr] = dtau_mol_sw[inbands_sw][inlyr] + dtau_ray_sw[inbands_sw][inlyr] + tau_ext[inbands_sw][inlyr];
+			w0_cloudtot[inbands_sw][inlyr] = (w0_cloud[inbands_sw]*tau_ext[inbands_sw][inlyr]+dtau_ray_sw[inbands_sw][inlyr])/tau_cloud[inbands_sw][inlyr];
+        	}
+        }
+        kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE_cloud);
+	solar_rt (deltaE_sw_cloud, Ag, nlev, nlyr, wgt_sw, band_lbound_sw, band_ubound_sw, nbands_sw,g_cloudtot,tau_cloud,w0_cloudtot);
 	//################################################################################################################
 
-	//###################################### use k atmosphere ########################################################
-        kAtmosphere(wgt_lw,band_lbound,band_ubound,nbands,nlyr,nlev,T,tau,Edown,Eup,deltaE);
-	solar_rt (deltaE_sw, Ag, nlev, nlyr, dtau_mol_sw, g0, dtau_ray_sw, wgt_sw, band_lbound_sw, band_ubound_sw, nbands_sw);
-        //################################################################################################################
-	/*for (int inlyr=0; inlyr<nlyr; inlyr++){
-		printf("deltaE_therm: %6.3f , deltaE_solar: %6.3f \n",deltaE[inlyr], deltaE_sw[inlyr]);
-	}*/
 	//################ find dt #######################################################################################
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		deltaT[inlyr] = E2T(deltaE[inlyr]+deltaE_sw[inlyr],dp);
+		deltaT[inlyr] = E2T((1.-cf)*(deltaE_clear[inlyr]+deltaE_sw_clear[inlyr])+cf*(deltaE_cloud[inlyr]+deltaE_sw_cloud[inlyr]),dp);
 		if(deltaT[inlyr]<0.){deltaT[inlyr] = -deltaT[inlyr];}
 	}
 	convection(deltaT,nlyr);
@@ -243,7 +336,7 @@ double kTimeLoop(int nlyr, int nlev){
 
 	//################ new T with calculated dt #####################################################################
 	for(int inlyr=0; inlyr<nlyr; inlyr++){
-		T[inlyr] += E2T(deltaE[inlyr]+deltaE_sw[inlyr],dp)*dt;
+		T[inlyr] += E2T((1.-cf)*(deltaE_clear[inlyr]+deltaE_sw_clear[inlyr])+cf*(deltaE_cloud[inlyr]+deltaE_sw_cloud[inlyr]),dp)*dt;
 	}
 
 	//################# convection ##################################################################################
@@ -408,10 +501,8 @@ int main()
     int nyco2 = 0;
     int tmp2 = 0;
     double tau_total = 1.9;
-
     double *wvnco2 = NULL; 
     double **tauco2 = NULL; 
-
     double *tmp3 = NULL; 
     double **tauh2o = NULL;
     double **tauch4 = NULL;
@@ -469,5 +560,3 @@ int main()
     free(wvnco2);
     free(wvnh2o);*/
 }
-
-

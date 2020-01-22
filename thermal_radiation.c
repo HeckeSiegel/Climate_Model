@@ -255,7 +255,7 @@ void eddington_v2 (double dtau, double g, double omega0, double mu0,
   *rdir = a13 / mu0;
   *sdir = a23 / mu0;
 }
-void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, double g, double **omega0, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands){
+void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands, double g[nbands][nlyr],double tau[nbands][nlyr],double omega0[nbands][nlyr]){
 	double r[nlyr], t[nlyr], tdir[nlyr], rdir[nlyr], sdir[nlyr]; 
 	double R[nlyr], T[nlyr], Tdir[nlyr], Sdir[nlyr];
 	double mu = 0.5; // 
@@ -269,7 +269,7 @@ void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, doub
 	//calculate deltaE's for all wavelength bands
 	for (int inbands=0; inbands<nbands; inbands++){
 	for (int inlyr=0; inlyr<nlyr; inlyr++){
-		eddington_v2 (tau[inbands][inlyr],g,omega0[inbands][inlyr],mu,&(t[inlyr]),&(r[inlyr]),&(rdir[inlyr]),&(sdir[inlyr]),&(tdir[inlyr]));
+		eddington_v2 (tau[inbands][inlyr],g[inbands][inlyr],omega0[inbands][inlyr],mu,&(t[inlyr]),&(r[inlyr]),&(rdir[inlyr]),&(sdir[inlyr]),&(tdir[inlyr]));
 	}
 	// 1. R,Tdir,Sdir
 	R[0] = r[0];
@@ -281,10 +281,10 @@ void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, doub
 		T[inlyr] = T[inlyr-1]*t[inlyr]/(1.0 - R[inlyr-1]*r[inlyr]);
 		Tdir[inlyr] = Tdir[inlyr-1]*tdir[inlyr];
 		Sdir[inlyr] = Tdir[inlyr-1]*sdir[inlyr] + (t[inlyr]*Sdir[inlyr-1] + Tdir[inlyr-1]*rdir[inlyr]*R[inlyr-1]*t[inlyr])/(1.0 - R[inlyr-1]*r[inlyr]);
-		/*if(R[inlyr]<0){R[inlyr]=0.;}
+		if(R[inlyr]<0){R[inlyr]=0.;}
 		if(T[inlyr]<0){T[inlyr]=0.;}
 		if(Tdir[inlyr]<0){Tdir[inlyr]=0.;}
-		if(Sdir[inlyr]<0){Sdir[inlyr]=0.;}*/
+		if(Sdir[inlyr]<0){Sdir[inlyr]=0.;}
 	}
 	// 2. transmission of direct solar radiation
 	Edir[0] = wgt_sw[inbands]*mu*0.5;

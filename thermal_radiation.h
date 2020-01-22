@@ -12,5 +12,5 @@ void multiBandAtmosphere(double *wvl,int nwvl, int nlyr, int nlev, double *T, do
 void kAtmosphere(double **wgt_lw, double *band_lbound, double *band_ubound, int nbands, int nlyr, int nlev, double *T, double **tau, double *Edown, double *Eup, double *deltaE);
 void eddington_v2 (double dtau, double g, double omega0, double mu0,
 		   double *t, double *r, double *rdir, double *sdir, double *tdir);
-void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double **tau, double g, double **omega0, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands);
+void solar_rt (double *deltaE, double Ag, int nlev, int nlyr, double *wgt_sw, double *band_lbound, double *band_ubound, int nbands, double g[nbands][nlyr],double tau[nbands][nlyr],double omega0[nbands][nlyr]);
 #endif
