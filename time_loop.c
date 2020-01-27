@@ -193,7 +193,7 @@ double kTimeLoop(int nlyr, int nlev){
     read_5c_file ("fpda.atm", &tmp1, &tmp2, &tmp3, &h20, &o3, &nrows);
 
     //clouds
-    double cf = 0.5;
+    double cf = 0.6;
     double *tmp4 = NULL;
     double *tmp5 = NULL; 
     double *tmp6 = NULL;  
@@ -213,10 +213,10 @@ double kTimeLoop(int nlyr, int nlev){
     //vertical expansion of cloud
     double tau_ext[sw_bands][nlyr];
     double tau_ext_lw[lw_bands][nlyr];
-    double tau_lw[lw_bands][nlyr];
-    int cloud_l = 1;
-    int cloud_u = 1;
-    double tau_ext0 = 20.;
+    
+    int cloud_l = 5;
+    int cloud_u = 6;
+    double tau_ext0 = 13.;
     // tau delta scaling for solar
     for(int insw_bands=0; insw_bands<sw_bands; insw_bands++){
         for(int i=0; i<cloud_l; i++){
@@ -281,7 +281,7 @@ double kTimeLoop(int nlyr, int nlev){
     while(1==1){
 	Ttoa = T[0]; // to compare temperature between 2 time steps
         for (int inlyr=0; inlyr < nlyr; inlyr++) {
-                h2ovmr[inlyr] = 1e-6*rel_Flyr[inlyr]*magnus(T[inlyr])*pow(10,6)/plyr[inlyr];
+                h2ovmr[inlyr] = rel_Flyr[inlyr]*magnus(T[inlyr])/plyr[inlyr];
         }
         //########################## call rrtm every time step ####################################################
 	cfpda_rrtm_lw (nlyr, p, T, h2ovmr, o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr,
