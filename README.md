@@ -16,4 +16,5 @@ greenhouse gas concentrations etc...
 - Run the model from the command line with `time_loop`, this will automatically print the results to the bash shell
 
 ## Example
-- The most important thing this project 
+- The most important insight of this project was to see how different concentrations of CO2 change the temperature of earth's surface
+![CO2](https://github.com/HeckeSiegel/Climate_Model/blob/master/lbl.png)
