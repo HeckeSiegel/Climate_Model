@@ -17,4 +17,6 @@ greenhouse gas concentrations etc...
 
 ## Example
 - The most important insight of this project was to see how different concentrations of CO2 change the temperature of earth's surface
+- 400 ppm is our current concentration, if we would double this to 800 ppm the surface temperature would rise around 2 Kelvin
+- (If there was no CO2 at all we would live on a snowball)
 ![CO2](https://github.com/HeckeSiegel/Climate_Model/blob/master/lbl.png)
