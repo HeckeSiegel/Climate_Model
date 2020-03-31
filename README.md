@@ -12,5 +12,8 @@ the atmosphere averaged over the whole globe.
 - This is easiest to use in a Linux environment
 - `git clone https://github.com/HeckeSiegel/Climate_Model.git`
 - In the time_loop.c file you can decide which kind of atmosphere you want to simulate and change different parameters like number of layers,
-greenhouse gas concentrations...
+greenhouse gas concentrations etc...
 - Run the model from the command line with `time_loop`, this will automatically print the results to the bash shell
+
+## Example
+- The most important thing this project 
