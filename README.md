@@ -6,4 +6,7 @@ the atmosphere averaged over the whole globe.
 ## Physics
 - Start with random temperature distribution over all layers
 - Calculate change of temperature due to radiative transfer based on Schwarzschild's equation https://en.wikipedia.org/wiki/Schwarzschild%27s_equation_for_radiative_transfer for each time step
-- 
+- Include varying concentrations of greenhouse gases
+- Simplified cloud feedback
+
+...to be continued
